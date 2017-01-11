@@ -1,0 +1,14 @@
+﻿@model DiscordWebApp.Models.Server
+
+@{
+    ViewBag.Title = "Index";
+}
+
+<h2>@Model.Name</h2>
+
+@Html.Partial("_Users", @Model.Users)
+
+<p>
+    @Html.ActionLink("Create New", "Create")
+</p>
+
