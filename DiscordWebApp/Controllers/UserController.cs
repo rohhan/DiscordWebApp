@@ -21,6 +21,20 @@ namespace DiscordWebApp.Controllers
             return HttpNotFound();
         }
 
+        public ActionResult Create(int serverId) {
+            return View();
+        }
+
+        [HttpPost]
+        public ActionResult Create(User user) {
+            if (ModelState.IsValid) {
+                _db.Users.Add(user);
+                _db.SaveChanges();
+                return RedirectToAction("Index", new { id = user.ServerId });
+            }
+            return View();
+        }
+
         protected override void Dispose(bool disposing)
         {
             _db.Dispose();

@@ -9,6 +9,6 @@
 @Html.Partial("_Users", @Model.Users)
 
 <p>
-    @Html.ActionLink("Create New", "Create")
+    @Html.ActionLink("Create New", "Create", new { serverId = Model.Id })
 </p>
 
