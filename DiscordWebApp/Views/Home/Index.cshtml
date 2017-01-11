@@ -1,13 +1,15 @@
-﻿@model IEnumerable<DiscordWebApp.Models.Server>
+﻿@model IEnumerable<DiscordWebApp.Models.ServerListViewModel>
 
 @{
     ViewBag.Title = "Home Page";
 }
 
 <div class="jumbotron">
-    <h1>Servers:</h1>
+    <h2>Servers:</h2>
     @foreach (var item in Model) {
         @item.Name
+        <br/>
+        @:Users: @item.CountOfUsers
         <hr/>
     }
 </div>
