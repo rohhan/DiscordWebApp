@@ -8,6 +8,10 @@ namespace DiscordWebApp.Models
 {
     public class DiscordWebAppDb : DbContext
     {
+        public DiscordWebAppDb() : base("name=DefaultConnection")
+        {
+
+        }
         public DbSet<Server> Servers { get; set; }
         public DbSet<User> Users { get; set; }
     }
