@@ -1,6 +1,7 @@
 ﻿using DiscordWebApp.Models;
 using System;
 using System.Collections.Generic;
+using System.Data.Entity;
 using System.Linq;
 using System.Web;
 using System.Web.Mvc;
@@ -29,6 +30,22 @@ namespace DiscordWebApp.Controllers
         public ActionResult Create(User user) {
             if (ModelState.IsValid) {
                 _db.Users.Add(user);
+                _db.SaveChanges();
+                return RedirectToAction("Index", new { id = user.ServerId });
+            }
+            return View();
+        }
+
+        [HttpGet]
+        public ActionResult Edit(int id) {
+            var model = _db.Users.Find(id);
+            return View(model);
+        }
+
+        [HttpPost]
+        public ActionResult Edit(User user) {
+            if (ModelState.IsValid) {
+                _db.Entry(user).State = EntityState.Modified;
                 _db.SaveChanges();
                 return RedirectToAction("Index", new { id = user.ServerId });
             }
