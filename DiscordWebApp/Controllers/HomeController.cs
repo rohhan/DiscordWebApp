@@ -1,4 +1,5 @@
-﻿using System;
+﻿using DiscordWebApp.Models;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Web;
@@ -8,9 +9,13 @@ namespace DiscordWebApp.Controllers
 {
     public class HomeController : Controller
     {
+        DiscordWebAppDb _db = new DiscordWebAppDb();
+
         public ActionResult Index()
         {
-            return View();
+            var model = _db.Servers.ToList();
+
+            return View(model);
         }
 
         public ActionResult About()
