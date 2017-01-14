@@ -1,7 +1,7 @@
 ﻿using Discord;
 using Discord.Commands;
-using DiscordWebApp;
-using DiscordWebApp.Models;
+//using DiscordWebApp;
+//using DiscordWebApp.Models;
 using System;
 using System.Collections.Generic;
 using System.Data.Entity.Migrations;
@@ -69,59 +69,57 @@ namespace DiscordWebAppBot
                 {
                     if (e.User.Id == 193488434051022848)
                     {
-                        using (var _db = new DiscordWebAppDb())
-                        {
-                            Console.WriteLine("one");
-                            var serverIdString = e.Server.Id.ToString();
-                            var currentServer = _db.Servers.Where(s => s.GuildId == serverIdString).SingleOrDefault();
-                            Console.WriteLine("two");
+                        //using (var _db = new DiscordWebAppDb())
+                        //{
+                        //    var serverIdString = e.Server.Id.ToString();
+                        //    var currentServer = _db.Servers.Where(s => s.GuildId == serverIdString).SingleOrDefault();
 
-                            //create server in db if it doesnt exist
-                            if (currentServer == null)
-                            {
-                                Console.WriteLine("Server doesn't exist...Creating...");
-                                var newServer = new DiscordWebApp.Models.Server()
-                                {
-                                    GuildId = serverIdString,
-                                    Name = e.Server.Name,
-                                    ServerOwner = e.Server.Owner.Name,
-                                    Users = new List<DiscordWebApp.Models.User>()
-                                };
+                        //    //create server in db if it doesnt exist
+                        //    if (currentServer == null)
+                        //    {
+                        //        Console.WriteLine("Server doesn't exist...Creating...");
+                        //        var newServer = new DiscordWebApp.Models.Server()
+                        //        {
+                        //            GuildId = serverIdString,
+                        //            Name = e.Server.Name,
+                        //            ServerOwner = e.Server.Owner.Name,
+                        //            Users = new List<DiscordWebApp.Models.User>()
+                        //        };
 
-                                _db.Servers.Add(newServer);
-                                _db.SaveChanges();
-                                Console.WriteLine("New server added to db");
-                            }
-                            else
-                            {
-                                Console.WriteLine("Found server...Adding users...");
-                            }
+                        //        _db.Servers.Add(newServer);
+                        //        _db.SaveChanges();
+                        //        Console.WriteLine("New server added to db");
+                        //    }
+                        //    else
+                        //    {
+                        //        Console.WriteLine("Found server...Adding users...");
+                        //    }
 
-                            // add users to server if they dont exist
-                            int numUsers = 0;
-                            foreach (var item in e.User.Server.Users.ToList())
-                            {
-                                numUsers++;
-                                Console.WriteLine($"Adding user {item.Name}, {item.JoinedAt}");
+                        //    // add users to server if they dont exist
+                        //    int numUsers = 0;
+                        //    foreach (var item in e.User.Server.Users.ToList())
+                        //    {
+                        //        numUsers++;
+                        //        Console.WriteLine($"Adding user {item.Name}, {item.JoinedAt}");
 
 
-                                var user = new DiscordWebApp.Models.User()
-                                {
-                                    GuildId = serverIdString,
-                                    DateCreated = item.JoinedAt,
-                                    LastOnline = item.LastOnlineAt,
-                                    LastActive = item.LastActivityAt,
-                                    Username = item.Name
-                                };
+                        //        var user = new DiscordWebApp.Models.User()
+                        //        {
+                        //            GuildId = serverIdString,
+                        //            DateCreated = item.JoinedAt,
+                        //            LastOnline = item.LastOnlineAt,
+                        //            LastActive = item.LastActivityAt,
+                        //            Username = item.Name
+                        //        };
 
-                                currentServer.Users.Add(user);
-                                Console.WriteLine("Done adding a user");
-                            }
-                            _db.SaveChanges();
-                            Console.WriteLine($"Number of users: {numUsers}");
-                            await e.Channel.SendMessage($"Done seeding database.");
+                        //        currentServer.Users.Add(user);
+                        //        Console.WriteLine("Done adding a user");
+                        //    }
+                        //    _db.SaveChanges();
+                        //    Console.WriteLine($"Number of users: {numUsers}");
+                        //    await e.Channel.SendMessage($"Done seeding database.");
 
-                        }
+                        //}
                     }
                     else
                     {
