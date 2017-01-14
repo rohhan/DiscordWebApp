@@ -23,18 +23,16 @@ namespace DiscordWebApp.Migrations
                     s => s.Name,
                     new Server {
                         Name = "Socialites",
-                        ServerOwner = "",
-                        Users = new List<User> {
-                            new User { Username = "Sosh", DateCreated = DateTime.Now, NumberOfFlowers = 50},
-                            new User { Username = "Silverhammer", DateCreated = DateTime.Now, NumberOfFlowers = 25}
-                        }
+                        GuildId = "",
+                        ServerOwner = ""
                     },
                     new Server
                     {
                         Name = "NotSoc",
+                        GuildId = "",
                         ServerOwner = "",
                         Users = new List<User> {
-                            new User { Username = "Sushi", DateCreated = DateTime.Now, NumberOfFlowers = 42},
+                            new User { Username = "Sushi", DateCreated = DateTime.Now, GuildId= "", NumberOfFlowers = 42},
                         }
                     }
                 );

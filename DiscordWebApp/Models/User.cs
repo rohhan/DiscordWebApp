@@ -12,10 +12,12 @@ namespace DiscordWebApp.Models
 
         public string Username { get; set; }
         public DateTime DateCreated { get; set; }
+        public DateTime? LastOnline { get; set; }
+        public DateTime? LastActive { get; set; }
 
-        [Range(1, 100)]
         [Display(Name="Number of Flowers")]
         public int NumberOfFlowers { get; set; }
         public int ServerId { get; set; }
+        public string GuildId { get; set; }
     }
 }

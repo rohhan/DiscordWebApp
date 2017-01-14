@@ -9,6 +9,12 @@
             @Html.DisplayNameFor(model => model.DateCreated)
         </th>
         <th>
+            @Html.DisplayNameFor(model => model.LastActive)
+        </th>
+        <th>
+            @Html.DisplayNameFor(model => model.LastOnline)
+        </th>
+        <th>
             @Html.DisplayNameFor(model => model.NumberOfFlowers)
         </th>
         <th>
@@ -25,6 +31,12 @@
             </td>
             <td>
                 @Html.DisplayFor(modelItem => item.DateCreated)
+            </td>
+            <td>
+                @Html.DisplayFor(modelItem => item.LastActive)
+            </td>
+            <td>
+                @Html.DisplayFor(modelItem => item.LastOnline)
             </td>
             <td>
                 @Html.DisplayFor(modelItem => item.NumberOfFlowers)

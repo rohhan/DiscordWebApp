@@ -6,7 +6,7 @@
 
 <h2>@Model.Name</h2>
 
-@Html.Partial("_Users", @Model.Users)
+@Html.Partial("_Users", @Model.Users.OrderBy(x => x.Username))
 
 <p>
     @Html.ActionLink("Create New", "Create", new { serverId = Model.Id })
