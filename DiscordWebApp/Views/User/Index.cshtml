@@ -1,14 +1,14 @@
-﻿@model DiscordWebApp.Models.Server
+﻿@model PagedList.IPagedList<DiscordWebApp.Models.User>
 
 @{
     ViewBag.Title = "Index";
 }
 
-<h2>@Model.Name</h2>
+<h2>@ViewBag.ServerName</h2>
 
-@Html.Partial("_Users", @Model.Users.OrderBy(x => x.Username))
+@Html.Partial("_Users", @Model)
 
 <p>
-    @Html.ActionLink("Create New", "Create", new { serverId = Model.Id })
+    @Html.ActionLink("Create New", "Create", new { serverId = ViewBag.ServerId })
 </p>
 

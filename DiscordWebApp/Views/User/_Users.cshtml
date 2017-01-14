@@ -1,55 +1,61 @@
-﻿@model IEnumerable<DiscordWebApp.Models.User>
+﻿@model PagedList.IPagedList<DiscordWebApp.Models.User>
 
-<table class="table">
-    <tr>
-        <th>
-            @Html.DisplayNameFor(model => model.Username)
-        </th>
-        <th>
-            @Html.DisplayNameFor(model => model.DateCreated)
-        </th>
-        <th>
-            @Html.DisplayNameFor(model => model.LastActive)
-        </th>
-        <th>
-            @Html.DisplayNameFor(model => model.LastOnline)
-        </th>
-        <th>
-            @Html.DisplayNameFor(model => model.NumberOfFlowers)
-        </th>
-        <th>
-            @Html.DisplayNameFor(model => model.ServerId)
-        </th>
-        <th></th>
-    </tr>
-
-    @foreach (var item in Model)
-    {
+<div id="userList">
+    <div class="pagedList" data-dwa-target="#userList">
+        @Html.PagedListPager(Model, page => Url.Action("Index", new { page }),
+       PagedListRenderOptions.MinimalWithItemCountText)
+    </div>
+    <table class="table">
         <tr>
-            <td>
-                @Html.DisplayFor(modelItem => item.Username)
-            </td>
-            <td>
-                @Html.DisplayFor(modelItem => item.DateCreated)
-            </td>
-            <td>
-                @Html.DisplayFor(modelItem => item.LastActive)
-            </td>
-            <td>
-                @Html.DisplayFor(modelItem => item.LastOnline)
-            </td>
-            <td>
-                @Html.DisplayFor(modelItem => item.NumberOfFlowers)
-            </td>
-            <td>
-                @Html.DisplayFor(modelItem => item.ServerId)
-            </td>
-            <td>
-                @Html.ActionLink("Edit", "Edit", new { id = item.Id }) |
-                @Html.ActionLink("Details", "Details", new { id = item.Id }) |
-                @Html.ActionLink("Delete", "Delete", new { id = item.Id })
-            </td>
+            <th>
+                Username
+            </th>
+            <th>
+                Date Joined
+            </th>
+            <th>
+                Last Active
+            </th>
+            <th>
+                Last Online
+            </th>
+            <th>
+                Number of Flowers
+            </th>
+            <th>
+                Server Id
+            </th>
+            <th></th>
         </tr>
-    }
 
-</table>
+        @foreach (var item in Model)
+        {
+            <tr>
+                <td>
+                    @Html.DisplayFor(modelItem => item.Username)
+                </td>
+                <td>
+                    @Html.DisplayFor(modelItem => item.DateCreated)
+                </td>
+                <td>
+                    @Html.DisplayFor(modelItem => item.LastActive)
+                </td>
+                <td>
+                    @Html.DisplayFor(modelItem => item.LastOnline)
+                </td>
+                <td>
+                    @Html.DisplayFor(modelItem => item.NumberOfFlowers)
+                </td>
+                <td>
+                    @Html.DisplayFor(modelItem => item.ServerId)
+                </td>
+                <td>
+                    @Html.ActionLink("Edit", "Edit", new { id = item.Id }) |
+                    @Html.ActionLink("Details", "Details", new { id = item.Id }) |
+                    @Html.ActionLink("Delete", "Delete", new { id = item.Id })
+                </td>
+            </tr>
+        }
+
+    </table>
+</div>
