@@ -15,7 +15,7 @@ namespace DiscordWebAppBot
     class MyBot
     {
         DiscordClient discord;
-        const string DiscordConnectionToken = "MjY4OTAwNjE2NjY1OTU2MzUy.C1hjLg.53QcW3hDGgOxtvt9s54KsenuHyc";
+        const string DiscordConnectionToken = "ENTER STRING HERE";
 
         public MyBot()
         {
