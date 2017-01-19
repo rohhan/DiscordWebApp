@@ -22,17 +22,17 @@ namespace DiscordWebApp.Migrations
             context.Servers.AddOrUpdate(
                     s => s.Name,
                     new Server {
-                        Name = "Socialites",
+                        Name = "OldSoc",
                         GuildId = "",
-                        ServerOwner = ""
+                        ServerOwner = "OldMan"
                     },
                     new Server
                     {
                         Name = "NotSoc",
                         GuildId = "",
-                        ServerOwner = "",
+                        ServerOwner = "NotSushi",
                         Users = new List<User> {
-                            new User { Username = "Sushi", DateCreated = DateTime.Now, GuildId= "", NumberOfFlowers = 42},
+                            new User { Username = "Sushi", DateJoined = DateTime.Now, GuildId= "", NumberOfFlowers = 42},
                         }
                     }
                 );
