@@ -1,0 +1,135 @@
+﻿@model IEnumerable<DiscordWebApp.Models.User>
+
+@{ 
+    // Need an array of arrays with values in this format: [Unix time, UserCount]
+    DateTime origin = new DateTime(1970, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc);
+    object[] objArr = new object[Model.Count()];
+
+    // Convert PST Datetime to UTC Datetime, then get just Date
+    var i = 0;
+    var userCount = 1; // starts with 1 = me
+    var totalusers = 1;
+    var totalkicked = 0;
+    var totalRemaining = 0;
+    string[] userCountArr = new string[Model.Count()];
+
+    foreach (var item in Model)
+    {
+        var dateJoined = item.DateJoined;
+        TimeSpan diff = dateJoined.ToUniversalTime() - origin;
+        var unixTime = Math.Floor(diff.TotalSeconds);
+        var unixTimeMs = unixTime * 1000;
+
+        // Add 1 if join, substract 1 if leave
+        userCount = item.DateLeft == null ? userCount + 1 : userCount - 1;
+
+        object[] newArr = new object[2] { unixTimeMs, userCount };
+
+        userCountArr[i] = userCount.ToString() + " - " +  item.Username;
+
+        objArr[i] = newArr;
+        i++;
+
+        // temp:
+        totalusers++;
+        if (item.DateLeft != null)
+        {
+            totalkicked++;
+        }
+    }
+    totalRemaining = userCount;
+
+
+
+    object[] arrOne = new object[2] { 1483587971000, 1 };
+    object[] arrTwo = new object[2] { 1483933571000, 3 };
+    object[] arrThree = new object[2] { 1484365571000, 5 };
+
+    object[] testArr = new object[3] { arrOne, arrTwo, arrThree};
+
+
+}
+
+<script src="https://code.jquery.com/jquery-3.1.1.min.js"
+        integrity="sha256-hVVnYaiADRTO2PzUGmuLJr8BLUSjGIZsDYGmIJLv2b8="
+        crossorigin="anonymous"></script>
+<script src="https://code.highcharts.com/highcharts.js"></script>
+<script src="https://code.highcharts.com/modules/exporting.js"></script>
+
+<div id="container" style="min-width: 310px; height: 400px; margin: 0 auto"></div>
+
+<script>
+
+    var objectArrray = @Html.Raw(Json.Encode(objArr));
+    var anArray = @Html.Raw(Json.Encode(testArr));
+    var testArr = @Html.Raw(Json.Encode(userCountArr));
+    console.log(testArr);
+    console.log("Total users:", @totalusers);
+    console.log("Total kicked:", @totalkicked);
+    console.log("Total remaining:", @totalRemaining);
+
+    $(function () {
+    $.getJSON('https://www.highcharts.com/samples/data/jsonp.php?filename=usdeur.json&callback=?', function (data) {
+
+        Highcharts.chart('container', {
+            chart: {
+                zoomType: 'x'
+            },
+            title: {
+                text: 'User count over time'
+            },
+            subtitle: {
+                text: document.ontouchstart === undefined ?
+                        'Click and drag in the plot area to zoom in' : 'Pinch the chart to zoom in'
+            },
+            xAxis: {
+                type: 'datetime'
+            },
+            yAxis: {
+                title: {
+                    text: 'User count'
+                }
+            },
+            legend: {
+                enabled: false
+            },
+            plotOptions: {
+                area: {
+                    fillColor: {
+                        linearGradient: {
+                            x1: 0,
+                            y1: 0,
+                            x2: 0,
+                            y2: 1
+                        },
+                        stops: [
+                            [0, Highcharts.getOptions().colors[0]],
+                            [1, Highcharts.Color(Highcharts.getOptions().colors[0]).setOpacity(0).get('rgba')]
+                        ]
+                    },
+                    marker: {
+                        radius: 2
+                    },
+                    lineWidth: 1,
+                    states: {
+                        hover: {
+                            lineWidth: 1
+                        }
+                    },
+                    threshold: null
+                }
+            },
+
+            series: [{
+                type: 'area',
+                name: 'User Count',
+                data: objectArrray
+            }]
+        });
+    });
+});
+
+// data:
+
+// ([[UnixTime], [UserCount]])
+</script>

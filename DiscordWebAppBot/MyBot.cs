@@ -55,6 +55,13 @@ namespace DiscordWebAppBot
                 });
 
 
+            //commands.CreateCommand("pls")
+            //    .Do(async (e) =>
+            //    {
+            //        //await e.Channel.SendMessage($"{{@{e.User.Id}}}");
+            //        await e.Channel.SendMessage($"$$$ {e.User.NicknameMention}");
+            //    });
+
             // save info to db
             // note: Last Activity and Last Online are tracked by bot, not pulled from discord 
             // so they will be null when seeding unless bot is kept online
@@ -128,8 +135,7 @@ namespace DiscordWebAppBot
             {
                 var logChannel = e.Server.FindChannels(logChannelName).FirstOrDefault();
 
-                // don't need to log deleted messages from Nadeko/Buster bot (buster deletes a lot of game/trivia/currency type events)
-                if (e.Message != null && e.User != null && e.User.Id != 196844256894124042)
+                if (e.Message != null && e.User != null)
                 {
                     var message = e.Message.Text;
                     var messageUser = e.Message.User;
@@ -189,17 +195,20 @@ namespace DiscordWebAppBot
                     // select most recent user match from db since same user might leave and come back
                     var user = _db.Users.Where(u => u.GuildId == serverIdString).OrderByDescending(x => x.DateJoined).FirstOrDefault();
 
-                    // update user leave info
-                    // ban event happens first, and then leave event (?)
-                    if (user.LeaveType != "BANNED")
-                    {
-                        user.LeaveType = "LEFT";
-                        user.DateLeft = DateTime.Now;
+                    if (user != null) {
+                        // update user leave info
+                        // ban event happens first, and then leave event (?)
+                        if (user.LeaveType != "BANNED")
+                        {
+                            user.LeaveType = "LEFT";
+                            user.DateLeft = DateTime.Now;
+                        }
+
+
+                        // save to db
+                        _db.SaveChanges();
                     }
                     
-                    
-                    // save to db
-                    _db.SaveChanges();
                 }
 
                 // output note to mod channel

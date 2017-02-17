@@ -115,6 +115,15 @@ namespace DiscordWebApp.Controllers
             return RedirectToAction("Index");
         }
 
+        // Graph stuff
+        public ActionResult Graph([Bind(Prefix = "id" )] int serverId)
+        {
+            var server = db.Servers.Find(serverId);
+            var users = server.Users.OrderBy(x => x.DateJoined).ToList();
+
+            return PartialView("_Graph", users);
+        }
+
         protected override void Dispose(bool disposing)
         {
             if (disposing)
