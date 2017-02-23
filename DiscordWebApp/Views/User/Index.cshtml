@@ -5,6 +5,9 @@
 }
 
 <h2>@ViewBag.ServerName</h2>
+<p>
+    @Html.ActionLink("Server Details", "Details", "Server", new { id = ViewBag.ServerId }, null) 
+</p>
 
 @Html.Partial("_Users", @Model)
 

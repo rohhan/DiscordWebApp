@@ -18,6 +18,7 @@ namespace DiscordWebAppBot
         // IMPORTANT: DO NOT PUSH TOKEN TO GITHUB
         const string DiscordConnectionToken = "token goes here";
         const string logChannelName = "logs";
+        const string logJoinedAndLeftChannel = "user_logs";
 
         public MyBot()
         {
@@ -55,23 +56,24 @@ namespace DiscordWebAppBot
                 });
 
 
-            //commands.CreateCommand("pls")
+            //commands.CreateCommand("pls") - FAILED: NADEKO BOT DOES NOT ACCEPT COMMANDS FROM OTHER BOTS (e.g. this bot)
             //    .Do(async (e) =>
             //    {
             //        //await e.Channel.SendMessage($"{{@{e.User.Id}}}");
             //        await e.Channel.SendMessage($"$$$ {e.User.NicknameMention}");
             //    });
 
-            // save info to db
-            // note: Last Activity and Last Online are tracked by bot, not pulled from discord 
-            // so they will be null when seeding unless bot is kept online
-            commands.CreateCommand("seed db")
+
+            // add server to db
+            commands.CreateCommand("add server")
                 .Do(async (e) =>
                 {
+                    // Only Creator / admin accounts
                     if (e.User.Id == 193488434051022848 || e.User.Id == 270645134226489344)
                     {
                         using (var _db = new DiscordWebAppDb())
                         {
+                            // get server info from calling user
                             var serverIdString = e.Server.Id.ToString();
                             var currentServer = _db.Servers.Where(s => s.GuildId == serverIdString).SingleOrDefault();
 
@@ -90,38 +92,82 @@ namespace DiscordWebAppBot
                                 _db.Servers.Add(newServer);
                                 _db.SaveChanges();
                                 Console.WriteLine("New server added to db");
+
+                                await e.Channel.SendMessage($"Successfully added server to database.");
+                            }
+                            else
+                            {
+                                await e.Channel.SendMessage($"Server already exists in the database.");
+                            }
+                        }
+                    }
+                    else
+                    {
+                        await e.Channel.SendMessage($"You do not have permission to run that command.");
+                    }
+                });
+            
+            // note: Last Activity and Last Online are tracked by bot, not pulled from discord 
+            // so they will be null when seeding unless bot is kept online
+            commands.CreateCommand("update users")
+                .Do(async (e) =>
+                {
+                    // Only Creator / admin accounts
+                    if (e.User.Id == 193488434051022848 || e.User.Id == 270645134226489344)
+                    {
+                        using (var _db = new DiscordWebAppDb())
+                        {
+                            // get server info from calling user
+                            var serverIdString = e.Server.Id.ToString();
+                            var currentServer = _db.Servers.Where(s => s.GuildId == serverIdString).SingleOrDefault();
+
+                            //check to make sure server exists in db
+                            if (currentServer == null)
+                            {
+                                Console.WriteLine("Server does not exist in the database.  Please run 'add server' command.");
+                                await e.Channel.SendMessage($"Server does not exist in the database.  Please run 'add server' command.");
                             }
                             else
                             {
                                 Console.WriteLine("Found server...Adding users...");
-                            }
 
-                            // add users to server if they dont exist
-                            int numUsers = 0;
-                            foreach (var item in e.User.Server.Users.ToList())
-                            {
-                                // NOTE: THIS WILL CAUSE SOME DESCREPENCIES
-                                // WE ARE USING .JOINEDAT HERE BUT WE USED DATETIME.NOW NORMALLY
-                                numUsers++;
-                                Console.WriteLine($"Adding user {item.Name}, {item.JoinedAt}");
-
-
-                                var user = new DiscordWebApp.Models.User()
+                                // add users to server if they dont exist
+                                int numTotalUsers = 0;
+                                int numNewUsers = 0;
+                                foreach (var item in e.User.Server.Users.ToList())
                                 {
-                                    GuildId = serverIdString,
-                                    DateJoined = item.JoinedAt,
-                                    LastOnline = item.LastOnlineAt,
-                                    LastActive = item.LastActivityAt,
-                                    Username = item.Name
-                                };
+                                    numTotalUsers++;
 
-                                currentServer.Users.Add(user);
-                                Console.WriteLine("Done adding a user");
+                                    var userIdString = item.Id.ToString();
+                                    var existingUser = _db.Users.Where(x => (x.GuildId == serverIdString) && (x.UserId == userIdString)).FirstOrDefault();
+
+                                    if (existingUser != null)
+                                    {
+                                        Console.WriteLine($"User already exists: {item.Name}");
+                                    }
+                                    else
+                                    {
+                                        numNewUsers++;
+
+                                        Console.WriteLine($"Adding user {item.Name}, {item.JoinedAt}");
+
+                                        var newUser = new DiscordWebApp.Models.User()
+                                        {
+                                            GuildId = serverIdString,
+                                            DateJoined = item.JoinedAt,
+                                            UserId = userIdString,
+                                            Username = item.Name
+                                        };
+
+                                        currentServer.Users.Add(newUser);
+                                        Console.WriteLine("Done adding a user");
+                                    }
+                                }
+                                _db.SaveChanges();
+                                Console.WriteLine($"Total numbers of users: {numTotalUsers}");
+                                Console.WriteLine($"Number of new users: {numNewUsers}");
+                                await e.Channel.SendMessage($"Done updating users.  New users added: {numNewUsers}.  Total users: {numTotalUsers}");
                             }
-                            _db.SaveChanges();
-                            Console.WriteLine($"Number of users: {numUsers}");
-                            await e.Channel.SendMessage($"Done seeding database.");
-
                         }
                     }
                     else
@@ -129,6 +175,72 @@ namespace DiscordWebAppBot
                         await e.Channel.SendMessage($"You do not have permission to run that command.");
                     }
 
+                });
+
+            commands.CreateCommand("purge userlist")
+                .Do(async (e) =>
+                {
+                    // Only Creator / admin accounts
+                    if (e.User.Id == 193488434051022848 || e.User.Id == 270645134226489344)
+                    {
+                        using (var _db = new DiscordWebAppDb())
+                        {
+                            // TODO
+                            await e.Channel.SendMessage($"Userlist for this server has been successfully cleared.");
+                        }
+                    }
+                    else
+                    {
+                        await e.Channel.SendMessage($"You do not have permission to run that command.");
+                    }
+                });
+
+            // display total user count
+            commands.CreateCommand("usercount")
+                .Do(async (e) =>
+                {
+                    using (var _db = new DiscordWebAppDb())
+                    {
+                        var numUsers = e.User.Server.Users.ToList().Count();
+
+                        await e.Channel.SendMessage($"Total user count: **{numUsers}** ");
+                    }
+                });
+
+            // display new user count
+            commands.CreateCommand("newusers")
+                .Parameter("days", ParameterType.Required)
+                .Do(async (e) =>
+                {
+                    // make sure correct parameters are passed in
+                    int numDays;
+                    bool isValid = int.TryParse(e.GetArg("days"), out numDays);
+
+                    if (isValid)
+                    {
+                        using (var _db = new DiscordWebAppDb())
+                        {
+                            // get server info from calling user
+                            var serverIdString = e.Server.Id.ToString();
+                            var currentServer = _db.Servers.Where(s => s.GuildId == serverIdString).SingleOrDefault();
+
+                            // negative because we will subtract (want data for past N days).
+                            var negativeNumDays = numDays * -1;
+
+                            if (currentServer != null)
+                            {
+                                // make sure to check for duplicates (people leaving/rejoining)
+                                // also might want to check for just who left vs who stayed
+                                var numNewUsers = currentServer.Users.GroupBy(x => x.UserId).Select(x => x.First()).Where(x => x.DateJoined >= DateTime.UtcNow.Date.AddDays(negativeNumDays)).ToList().Count();
+
+                                await e.Channel.SendMessage($"New users in the past {e.GetArg("days")} days: **{numNewUsers}** ");
+                            }
+                        }
+                    }
+                    else
+                    {
+                        await e.Channel.SendMessage($"Error: Please enter a valid number.");
+                    }
                 });
 
             discord.MessageDeleted += async (s, e) =>
@@ -148,13 +260,10 @@ namespace DiscordWebAppBot
             };
 
             // track when users joined
-            // NOTE: Datetime.now is different from JoinedAt date (timezones)
-            // USE ONE OR THE OTHER
-            // FOR: JOINED, LEFT, MESSAGE DELETED
             discord.UserJoined += async (s, e) =>
             {
                 using (var _db = new DiscordWebAppDb())
-                {   
+                {
                     // get server info
                     var serverIdString = e.Server.Id.ToString();
                     var currentServer = _db.Servers.Where(g => g.GuildId == serverIdString).SingleOrDefault();
@@ -162,11 +271,10 @@ namespace DiscordWebAppBot
                     // create new user
                     var newUser = new DiscordWebApp.Models.User()
                     {
-                        UserId = e.User.Id.ToString(),
-                        Username = e.User.ToString(),
                         GuildId = serverIdString,
-                        DateJoined = DateTime.Now,
-
+                        DateJoined = e.User.JoinedAt,
+                        UserId = e.User.Id.ToString(),
+                        Username = e.User.ToString()
                     };
 
                     // add user to server
@@ -177,9 +285,9 @@ namespace DiscordWebAppBot
                 }
 
                 // output note to mod channel
-                var logChannel = e.Server.FindChannels(logChannelName).FirstOrDefault();
+                var logChannel = e.Server.FindChannels(logJoinedAndLeftChannel).FirstOrDefault();
                 // Perl is just for colored markdown
-                await logChannel.SendMessage($"```Perl\n\" User has joined the server - {DateTime.Now} \"\n{e.User}\n```");
+                await logChannel.SendMessage($"```Perl\n\" User has joined the server - {e.User.JoinedAt} (UTC) \"\n{e.User}\n```");
             };
 
             // track when users leave
@@ -187,33 +295,39 @@ namespace DiscordWebAppBot
             {
                 using (var _db = new DiscordWebAppDb())
                 {
-                    // get server info
+                    // get server and user info
                     var serverIdString = e.Server.Id.ToString();
                     var currentServer = _db.Servers.Where(g => g.GuildId == serverIdString).SingleOrDefault();
 
-                    // get user
-                    // select most recent user match from db since same user might leave and come back
-                    var user = _db.Users.Where(u => u.GuildId == serverIdString).OrderByDescending(x => x.DateJoined).FirstOrDefault();
+                    var userId = e.User.Id.ToString();
 
-                    if (user != null) {
+                    // select user
+                    // select most recent user match from db since same user might leave and come back
+                    var user = _db.Users.Where(u => (u.GuildId == serverIdString) && (u.UserId == userId)).OrderByDescending(x => x.DateJoined).FirstOrDefault();
+
+                    if (user == null) // in case  bot was down or didn't properly create user
+                    {
+                        // create user
+                    }
+                    else
+                    {
                         // update user leave info
                         // ban event happens first, and then leave event (?)
                         if (user.LeaveType != "BANNED")
                         {
                             user.LeaveType = "LEFT";
-                            user.DateLeft = DateTime.Now;
+                            user.DateLeft = DateTime.UtcNow;
                         }
-
 
                         // save to db
                         _db.SaveChanges();
                     }
-                    
+
                 }
 
                 // output note to mod channel
-                var logChannel = e.Server.FindChannels(logChannelName).FirstOrDefault();
-                await logChannel.SendMessage($"```Diff\n+ \" User has left the server - {DateTime.Now} \"\n{e.User}\n```");
+                var logChannel = e.Server.FindChannels(logJoinedAndLeftChannel).FirstOrDefault();
+                await logChannel.SendMessage($"```Diff\n+ \" User has left the server - {e.User.JoinedAt} (UTC) \"\n{e.User}\n```");
             };
 
             // track kicked users
@@ -221,25 +335,57 @@ namespace DiscordWebAppBot
             {
                 using (var _db = new DiscordWebAppDb())
                 {
-                    // get server info
+                    // get server and user info
                     var serverIdString = e.Server.Id.ToString();
                     var currentServer = _db.Servers.Where(g => g.GuildId == serverIdString).SingleOrDefault();
 
-                    // get user
+                    var userId = e.User.Id.ToString();
+
+                    // select user
                     // select most recent user match from db since same user might leave and come back
-                    var user = _db.Users.Where(u => u.GuildId == serverIdString).OrderByDescending(x => x.DateJoined).FirstOrDefault();
+                    var user = _db.Users.Where(u => (u.GuildId == serverIdString) && (u.UserId == userId)).OrderByDescending(x => x.DateJoined).FirstOrDefault();
 
                     // update user leave info
                     user.LeaveType = "BANNED";
-                    user.DateLeft = DateTime.Now;
+                    user.DateLeft = e.User.LastOnlineAt;
 
                     // save to db
                     _db.SaveChanges();
                 }
 
                 // output note to mod channel
-                var logChannel = e.Server.FindChannels(logChannelName).FirstOrDefault();
-                await logChannel.SendMessage($"```Diff\n+ \" User has been BANNED from the server - {DateTime.Now} \"\n{e.User}\n```");
+                var logChannel = e.Server.FindChannels(logJoinedAndLeftChannel).FirstOrDefault();
+                await logChannel.SendMessage($"```Diff\n+ \" User has been BANNED from the server - {e.User.LastOnlineAt} (UTC) \"\n{e.User}\n```");
+            };
+
+            // track user last active
+            discord.MessageReceived += async (s, e) =>
+            {
+                // Check to make sure that the bot is not the author
+                if (!e.Message.IsAuthor && e.User.Id != 196844256894124042)
+                {
+                    using (var _db = new DiscordWebAppDb())
+                    {
+                        // get server and user info
+                        var serverIdString = e.Server.Id.ToString();
+                        var currentServer = _db.Servers.Where(g => g.GuildId == serverIdString).SingleOrDefault();
+
+                        var userId = e.User.Id.ToString();
+
+
+                        // select user
+                        // select most recent user match from db since same user might leave and come back
+                        var user = _db.Users.Where(u => (u.GuildId == serverIdString) && (u.UserId == userId)).OrderByDescending(x => x.DateJoined).FirstOrDefault();
+                        if (user != null)
+                        {
+                            user.LastActive = DateTime.UtcNow;
+                            _db.SaveChanges();
+                        }
+                    }
+
+                    // is this correct usage?  i want an async method that awaits nothing
+                    await Task.FromResult(true);
+                }
             };
 
             // connect

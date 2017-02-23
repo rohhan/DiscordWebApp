@@ -1,29 +1,27 @@
 ﻿@model PagedList.IPagedList<DiscordWebApp.Models.User>
 
 <div id="userList">
+    <form method="get">
+        <input type="search" name="searchTerm"/>
+        <input type="submit" value="Search by Username"/>
+    </form>
     <div class="pagedList" data-dwa-target="#userList">
-        @Html.PagedListPager(Model, page => Url.Action("Index", new { page }),
+        @Html.PagedListPager(Model, page => Url.Action("Index", new { page, searchTerm = Request["searchTerm"], sortBy = Request["sortBy"] }),
        PagedListRenderOptions.MinimalWithItemCountText)
     </div>
     <table class="table">
         <tr>
             <th>
-                Username
+                @Html.ActionLink("Username", "Index", new { sortBy = ViewBag.SortNameParameter, searchTerm = Request.QueryString["searchTerm"], id = ViewBag.ServerId })
             </th>
             <th>
-                Date Joined
+                User Id
             </th>
             <th>
-                Last Active
+                @Html.ActionLink("Date Joined", "Index", new { sortBy = ViewBag.SortDateJoindParameter, searchTerm = Request.QueryString["searchTerm"], id = ViewBag.ServerId })
             </th>
             <th>
-                Last Online
-            </th>
-            <th>
-                Number of Flowers
-            </th>
-            <th>
-                Server Id
+                @Html.ActionLink("Last Active", "Index", new { sortBy = ViewBag.SortLastActiveParameter, searchTerm = Request.QueryString["searchTerm"], id = ViewBag.ServerId })
             </th>
             <th></th>
         </tr>
@@ -35,19 +33,13 @@
                     @Html.DisplayFor(modelItem => item.Username)
                 </td>
                 <td>
+                    @Html.DisplayFor(modelItem => item.UserId)
+                </td>
+                <td>
                     @Html.DisplayFor(modelItem => item.DateJoined)
                 </td>
                 <td>
                     @Html.DisplayFor(modelItem => item.LastActive)
-                </td>
-                <td>
-                    @Html.DisplayFor(modelItem => item.LastOnline)
-                </td>
-                <td>
-                    @Html.DisplayFor(modelItem => item.NumberOfFlowers)
-                </td>
-                <td>
-                    @Html.DisplayFor(modelItem => item.ServerId)
                 </td>
                 <td>
                     @Html.ActionLink("Edit", "Edit", new { id = item.Id }) |
