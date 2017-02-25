@@ -180,11 +180,34 @@ namespace DiscordWebAppBot
             commands.CreateCommand("purge userlist")
                 .Do(async (e) =>
                 {
+                    // Having an issue with BULK deletes through LINQ
+
                     // Only Creator / admin accounts
                     if (e.User.Id == 193488434051022848 || e.User.Id == 270645134226489344)
                     {
                         using (var _db = new DiscordWebAppDb())
                         {
+                            //// get server info from calling user
+                            //var serverIdString = e.Server.Id.ToString();
+                            //var currentServer = _db.Servers.Where(s => s.GuildId == serverIdString).SingleOrDefault();
+
+                            //var users = currentServer.Users.Where(x => x.GuildId == serverIdString);
+                            
+
+                            //foreach (var user in users)
+                            //{
+                            //    _db.Users.Remove(user);
+                            //}
+                            //_db.SaveChanges();
+                            
+
+                            //userList.Delete(x => x.GuildId == serverIdString);
+
+                            //foreach (var item in e.User.Server.Users.ToList())
+                            //{
+                            //    currentServer.Users.Remove(item);
+                            //}
+
                             // TODO
                             await e.Channel.SendMessage($"Userlist for this server has been successfully cleared.");
                         }
@@ -192,6 +215,76 @@ namespace DiscordWebAppBot
                     else
                     {
                         await e.Channel.SendMessage($"You do not have permission to run that command.");
+                    }
+                });
+
+
+            // if user has been active in past N days, assign "active" role
+            // otherwise remove role
+            commands.CreateCommand("update active users")
+                // note to self: c, u, ch = command, user, channel
+                // can also add a second argument to addcheck for error message to return
+                // find roles returns iEnumerable so need to use .FirstOrDefault()
+                .AddCheck((c, u, ch) => u.HasRole(ch.Server.FindRoles("badmin").FirstOrDefault()))
+                .Do(async (e) =>
+                {
+                    using (var _db = new DiscordWebAppDb())
+                    {
+                        // get server info from calling user
+                        var serverIdString = e.Server.Id.ToString();
+                        var currentServer = _db.Servers.Where(s => s.GuildId == serverIdString).SingleOrDefault();
+
+
+                        // find 'active' role
+                        var activeRole = e.Server.FindRoles("active").FirstOrDefault();
+
+                        if (activeRole != null)
+                        {
+                            int numActive = 0;
+                            int numInactive = 0;
+                            // add 'active' role to active users
+                            // CAREFUL: e.Server.Users doesnt track users who left
+                            // but we have to use it here instead of _db.Server so we have access to the AddRoles method
+                            foreach (var user in e.Server.Users)
+                            {
+                                var userIdString = user.Id.ToString();
+
+                                var currentUser =
+                                    currentServer
+                                        .Users
+                                        .OrderByDescending(x => x.DateJoined) // in case of duplicate same user (after leaving/rejoining)
+                                        .Where(x => (x.GuildId == serverIdString) && (x.UserId == userIdString))
+                                        .FirstOrDefault();
+
+                                if (currentUser.LastActive >= DateTime.UtcNow.Date.AddDays(-7))
+                                {
+                                    numActive++;
+                                    // don't assign if already has role or if is owner 
+                                    if (!user.HasRole(activeRole) && user.Id != 270645134226489344)
+                                    {
+                                        await user.AddRoles(activeRole);
+                                    }
+                                }
+                                else
+                                {
+                                    numInactive++;
+
+                                    if (user.HasRole(activeRole))
+                                    {
+                                        await user.RemoveRoles(activeRole);
+                                    }
+                                    
+                                }
+                            }
+
+                            await e.Channel.SendMessage($"Successfully updated active users.  Active users in the past 7 days: **{numActive}**.  Inactive users in the past 7 days: {numInactive}");
+                        }
+                        else
+                        {
+                            await e.Channel.SendMessage($"Error: Missing role.");
+                        }
+
+                        
                     }
                 });
 
