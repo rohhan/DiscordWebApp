@@ -113,7 +113,7 @@ namespace DiscordWebAppBot
                 .Do(async (e) =>
                 {
                     // Only Creator / admin accounts
-                    if (e.User.Id == 193488434051022848 || e.User.Id == 270645134226489344)
+                    if (e.User.Id == 193488434051022848 || e.User.Id == 270645134226489344 || e.User.Id == 176870246940934144)
                     {
                         using (var _db = new DiscordWebAppDb())
                         {
@@ -256,25 +256,35 @@ namespace DiscordWebAppBot
                                         .Where(x => (x.GuildId == serverIdString) && (x.UserId == userIdString))
                                         .FirstOrDefault();
 
-                                if (currentUser.LastActive >= DateTime.UtcNow.Date.AddDays(-7))
+                                try
                                 {
-                                    numActive++;
-                                    // don't assign if already has role or if is owner 
-                                    if (!user.HasRole(activeRole) && user.Id != 270645134226489344)
+                                    if (currentUser.LastActive >= DateTime.UtcNow.Date.AddDays(-7))
                                     {
-                                        await user.AddRoles(activeRole);
+                                        numActive++;
+                                        // don't assign if already has role or if is owner 
+                                        if (!user.HasRole(activeRole) && user.Id != 270645134226489344)
+                                        {
+                                            await user.AddRoles(activeRole);
+                                        }
                                     }
-                                }
-                                else
-                                {
-                                    numInactive++;
+                                    else
+                                    {
+                                        numInactive++;
 
-                                    if (user.HasRole(activeRole))
-                                    {
-                                        await user.RemoveRoles(activeRole);
+                                        if (user.HasRole(activeRole))
+                                        {
+                                            await user.RemoveRoles(activeRole);
+                                        }
+
                                     }
-                                    
                                 }
+                                catch
+                                {
+                                    // Remember to run "update users" command before "update active users"
+                                    // If users join when bot is down and db isn't updated, error will be thrown here
+                                    Console.WriteLine($"Caught an error");
+                                }
+                                
                             }
 
                             await e.Channel.SendMessage($"Successfully updated active users.  Active users in the past 7 days: **{numActive}**.  Inactive users in the past 7 days: {numInactive}");
@@ -326,13 +336,98 @@ namespace DiscordWebAppBot
                                 // also might want to check for just who left vs who stayed
                                 var numNewUsers = currentServer.Users.GroupBy(x => x.UserId).Select(x => x.First()).Where(x => x.DateJoined >= DateTime.UtcNow.Date.AddDays(negativeNumDays)).ToList().Count();
 
-                                await e.Channel.SendMessage($"New users in the past {e.GetArg("days")} days: **{numNewUsers}** ");
+                                var numLeftUsers = currentServer.Users.GroupBy(x => x.UserId).Select(x => x.First()).Where(x => x.DateLeft >= DateTime.UtcNow.Date.AddDays(negativeNumDays)).ToList().Count();
+
+                                await e.Channel.SendMessage($"New users in the past {e.GetArg("days")} days: **{numNewUsers}**. \nUsers who left: **{numLeftUsers}**.  \nTotal net: **{numNewUsers - numLeftUsers}**");
                             }
                         }
                     }
                     else
                     {
                         await e.Channel.SendMessage($"Error: Please enter a valid number.");
+                    }
+                });
+
+            commands.CreateCommand("update rich users")
+                .AddCheck((c, u, ch) => u.HasRole(ch.Server.FindRoles("badmin").FirstOrDefault()))
+                .Do(async (e) =>
+                {
+                    using (var _db = new DiscordWebAppDb())
+                    {
+
+                        // get server info from calling user
+                        var serverIdString = e.Server.Id.ToString();
+                        var currentServer = _db.Servers.Where(s => s.GuildId == serverIdString).SingleOrDefault();
+
+
+                        // List of users with over 1500 points
+                        List<string> userIdList = new List<string>
+                        {
+                            "222492622873165824", "270645134226489344", "193488434051022848", "146164272278274048", "127971327666683904",
+                            "190284094188421120", "192746604745195521", "202915354974879745", "247204729539526657", "155473464759812097",
+                            "95591712935649280", "103651750757543936", "270770110111678464", "197041135279931392", "203013697382121473",
+                            "194500163123806209", "223230145144553473", "225088501572567042", "180321407207473152", "206925756620734467",
+                            "80857820991332352", "201449547606654976", "164684870390513665", "135466956957548544", "90524647044423680",
+                            "181623740206022657", "162063932515680256", "196267152162947072", "98790249253068800", "156478093605732353",
+                            "95681793226715136", "245657974813622282", "181579327320752129", "196291500760367104", "230406807665770496",
+                            "135869064370323456", "202242452331954176", "114041975480516612", "178823916129746944", "148829787069087744",
+                            "186702252231229440", "144850470412746752", "193804772405542922", "117783631358984196", "211947650625437696",
+                            "272789470720425985", "196152888328847360", "191549067950555136", "170615503377661952", "241504501821997057",
+                            "147977933510672384", "232287300841766913", "178353074547458048", "149601692466282496", "270667121040556042",
+                            "249837057457913856", "159749759240765441", "199987428642127872", "194613817911672832", "197866017660207104",
+                            "136629317244420097", "260567666325061633", "165676206497202177", "223214301702389771", "193690154236379136",
+                            "243687424809500672", "148961736358232075", "272111615544000513", "157579699525124096", "219631484632301569",
+                            "261670184878735360", "217125225416884224", "272955218923225098", "263193967460352000", "140116955255406592",
+                            "134760463811477504", "209438385134108672", "268840992021544970", "124079524680826880", "152875095042293760",
+                            "223229123227549696", "251990780032450560", "166422869448982528", "224652590485340160", "131059058336727040",
+                            "133080813716766720", "265858401450328065", "269945560922980352", "155044949367193600", "211687511544561664",
+                            "196728370480939008", "272503662041890816", "275845816210554880", "158292919671980032", "159754762890379274",
+                            "192873182275829760", "123627422154227712", "188053902342488064", "109153280399011840", "204068808737030144",
+                            "148341562022035457", "256211257638518786", "201892513311621120", "261340206286897153", "249718528142344194",
+                            "171911256163352576", "139006003118211073"
+                        };
+
+                        // find 'active' and 'rich' role
+                        var activeRole = e.Server.FindRoles("active").FirstOrDefault();
+                        var moneyRole = e.Server.FindRoles("rich").FirstOrDefault();
+
+                        var numInList = 0;
+
+                        if (activeRole != null && moneyRole != null)
+                        {
+                            foreach (var user in e.Server.Users)
+                            {
+                                var userIdString = user.Id.ToString();
+
+                                var currentUser =
+                                    currentServer
+                                        .Users
+                                        .OrderByDescending(x => x.DateJoined) // in case of duplicate same user (after leaving/rejoining)
+                                        .Where(x => (x.GuildId == serverIdString) && (x.UserId == userIdString))
+                                        .FirstOrDefault();
+
+                                foreach (var userId in userIdList)
+                                {
+                                    if (userId == userIdString && user.HasRole(activeRole))
+                                    {
+                                        numInList++;
+
+                                        if (!user.HasRole(moneyRole) && user.Id != 270645134226489344)
+                                        {
+                                            await user.AddRoles(moneyRole);
+                                        }
+                                    }
+                                }
+                            }
+
+                            await e.Channel.SendMessage("Successfully added 'rich' role to active users with over 1500 points.");
+                        }
+                        else
+                        {
+                            await e.Channel.SendMessage("There was an error.");
+                        }
+
+                        
                     }
                 });
 
@@ -420,7 +515,7 @@ namespace DiscordWebAppBot
 
                 // output note to mod channel
                 var logChannel = e.Server.FindChannels(logJoinedAndLeftChannel).FirstOrDefault();
-                await logChannel.SendMessage($"```Diff\n+ \" User has left the server - {e.User.JoinedAt} (UTC) \"\n{e.User}\n```");
+                await logChannel.SendMessage($"```Diff\n+ \" User has left the server - {DateTime.UtcNow} (UTC) \"\n{e.User}\n```");
             };
 
             // track kicked users
