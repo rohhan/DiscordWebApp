@@ -134,6 +134,8 @@ namespace DiscordWebAppBot
                                 // add users to server if they dont exist
                                 int numTotalUsers = 0;
                                 int numNewUsers = 0;
+
+                                // check to make sure all users in remote server are also in db
                                 foreach (var item in e.User.Server.Users.ToList())
                                 {
                                     numTotalUsers++;
@@ -163,10 +165,36 @@ namespace DiscordWebAppBot
                                         Console.WriteLine("Done adding a user");
                                     }
                                 }
+
+                                // check to see if any users in db are missing from remote server (if so, add leave date)
+                                var numUpdatedUsers = 0;
+                                foreach (var item in currentServer.Users.ToList())
+                                {
+                                    if (item.DateLeft == null)
+                                    {
+                                        var match = false;
+                                        foreach (var serverUser in e.User.Server.Users.ToList())
+                                        {
+                                            var userIdString = serverUser.Id.ToString();
+                                            if (userIdString == item.UserId)
+                                            {
+                                                match = true;
+                                            }
+                                        }
+
+                                        if (match == false)
+                                        {
+                                            numUpdatedUsers++;
+                                            item.LeaveType = "UNKNOWN";
+                                            item.DateLeft = DateTime.UtcNow;
+                                        }
+                                    }
+                                }
+
                                 _db.SaveChanges();
                                 Console.WriteLine($"Total numbers of users: {numTotalUsers}");
                                 Console.WriteLine($"Number of new users: {numNewUsers}");
-                                await e.Channel.SendMessage($"Done updating users.  New users added: {numNewUsers}.  Total users: {numTotalUsers}");
+                                await e.Channel.SendMessage($"Done updating users.  \nNew users added to DB: **{numNewUsers}**.  \nUsers (who left) udpated in DB : **{numUpdatedUsers}**  \nTotal users: **{numTotalUsers}**");
                             }
                         }
                     }
@@ -311,7 +339,7 @@ namespace DiscordWebAppBot
                 });
 
             // display new user count
-            commands.CreateCommand("newusers")
+            commands.CreateCommand("users overview")
                 .Parameter("days", ParameterType.Required)
                 .Do(async (e) =>
                 {
@@ -334,11 +362,123 @@ namespace DiscordWebAppBot
                             {
                                 // make sure to check for duplicates (people leaving/rejoining)
                                 // also might want to check for just who left vs who stayed
-                                var numNewUsers = currentServer.Users.GroupBy(x => x.UserId).Select(x => x.First()).Where(x => x.DateJoined >= DateTime.UtcNow.Date.AddDays(negativeNumDays)).ToList().Count();
 
-                                var numLeftUsers = currentServer.Users.GroupBy(x => x.UserId).Select(x => x.First()).Where(x => x.DateLeft >= DateTime.UtcNow.Date.AddDays(negativeNumDays)).ToList().Count();
+                                // New users:
+                                var numNewUsers = 
+                                    currentServer
+                                        .Users
+                                        .GroupBy(x => x.UserId)
+                                        .Select(x => x.First())
+                                        .Where(x => x.DateJoined >= DateTime.UtcNow.Date.AddDays(negativeNumDays))
+                                        .ToList()
+                                        .Count();
 
-                                await e.Channel.SendMessage($"New users in the past {e.GetArg("days")} days: **{numNewUsers}**. \nUsers who left: **{numLeftUsers}**.  \nTotal net: **{numNewUsers - numLeftUsers}**");
+                                var numNewUsersWhoLeft =
+                                    currentServer
+                                        .Users
+                                        .GroupBy(x => x.UserId)
+                                        .Select(x => x.First())
+                                        .Where(x => (x.DateJoined >= DateTime.UtcNow.Date.AddDays(negativeNumDays)) && (x.DateLeft >= DateTime.UtcNow.Date.AddDays(negativeNumDays)))
+                                        .ToList()
+                                        .Count();
+
+                                var numNewUsersWhoStayed = numNewUsers - numNewUsersWhoLeft;
+                                var percentRetention = (int)Math.Round((double)(100 * numNewUsersWhoStayed) / numNewUsers);
+
+                                // active new users:
+                                var numNewUsersActive =
+                                    currentServer
+                                        .Users
+                                        .GroupBy(x => x.UserId)
+                                        .Select(x => x.First())
+                                        .Where(x => (x.DateJoined >= DateTime.UtcNow.Date.AddDays(negativeNumDays)) && (x.LastActive >= DateTime.UtcNow.Date.AddDays(negativeNumDays)) && (x.DateLeft == null))
+                                        .ToList()
+                                        .Count();
+
+                                var percentNewUsersActive = (int)Math.Round((double)(100 * numNewUsersActive) / numNewUsersWhoStayed);
+
+                                var numNewUsersWhoTalkedThenLeft =
+                                    currentServer
+                                        .Users
+                                        .GroupBy(x => x.UserId)
+                                        .Select(x => x.First())
+                                        .Where(x => (x.DateJoined >= DateTime.UtcNow.Date.AddDays(negativeNumDays)) && (x.LastActive >= DateTime.UtcNow.Date.AddDays(negativeNumDays)) && (x.DateLeft != null))
+                                        .ToList()
+                                        .Count();
+
+                                var percentTalkedAndLeft = (int)Math.Round((double)(100 * numNewUsersWhoTalkedThenLeft) / numNewUsersWhoLeft);
+
+                                // Existing users:
+                                var numTotalUsersWhoLeft = 
+                                    currentServer
+                                        .Users
+                                        .GroupBy(x => x.UserId)
+                                        .Select(x => x.First())
+                                        .Where(x => x.DateLeft >= DateTime.UtcNow.Date.AddDays(negativeNumDays))
+                                        .ToList()
+                                        .Count();
+
+                                // get everyone currently in the server
+                                var numTotalUsers =
+                                    currentServer
+                                        .Users
+                                        .GroupBy(x => x.UserId)
+                                        .Select(x => x.First())
+                                        .Where(x => (x.DateLeft == null))
+                                        .ToList()
+                                        .Count();
+
+                                var numTotalOldUsers = 
+                                    currentServer
+                                        .Users
+                                        .GroupBy(x => x.UserId)
+                                        .Select(x => x.First())
+                                        .Where(x => (x.DateJoined < DateTime.UtcNow.Date.AddDays(negativeNumDays)))
+                                        .ToList()
+                                        .Count();
+
+                                var numOldUsersWhoLeft =
+                                    currentServer
+                                        .Users
+                                        .GroupBy(x => x.UserId)
+                                        .Select(x => x.First())
+                                        .Where(x => (x.DateJoined < DateTime.UtcNow.Date.AddDays(negativeNumDays)) && (x.DateLeft >= DateTime.UtcNow.Date.AddDays(negativeNumDays)))
+                                        .ToList()
+                                        .Count();
+
+                                var totes = e.Server.Users.ToList().Count();
+
+                                Console.WriteLine(numTotalUsers);
+                                Console.WriteLine(totes);
+                                
+                                // JOIN DATA
+
+                                // LEAVE DATA
+
+                                // RETENTION
+
+                                //var numOldUsersWhoLeft = numTotalUsersWhoLeft - numNewUsersWhoLeft;
+                                
+                                var oldie = totes - numNewUsers;
+                                var percentDecay = (int)Math.Round((double)(100 * numOldUsersWhoLeft) / numTotalOldUsers);// how many older users are leaving (don't include new users when calculating percent)
+
+                                var channelMessage =
+                                    "__**New Users:**__  \n" +
+                                    $"Total new users joined in the past {e.GetArg("days")} days: **{numNewUsers}** \n" +
+                                    $"New user retention: **{percentRetention}%** ({numNewUsersWhoStayed} / {numNewUsers})  \n" +
+                                    $"Out of all new users who left, how many talked: **{percentTalkedAndLeft}%** ({numNewUsersWhoTalkedThenLeft} / {numNewUsersWhoLeft}) \n" +
+                                    $"Out of all the new users who stayed, how many talk: **{percentNewUsersActive}%**  ({numNewUsersActive} / {numNewUsersWhoStayed})\n\n" +
+                                    //$"Total net new users: **{numNewUsers - numTotalUsersWhoLeft}**  \n\n" +
+
+                                    $"__**Existing Users:**__\n" +
+                                    "(*the math/code is slightly off*)  \n" +
+                                    $"Total current users: **{numTotalUsers}**\n" +
+                                    $"Total users before {e.GetArg("days")} days ago: **{numTotalOldUsers}** \n" +
+                                    $"Number of old users who left: **{numOldUsersWhoLeft}**  \n" +
+                                    //$"Total number of users who left in the past {e.GetArg("days")} days: **{numTotalUsersWhoLeft}**  \n" +
+                                    $"Percent decay (percent of existing users that left): **{percentDecay}%**";
+
+                                await e.Channel.SendMessage(channelMessage);
                             }
                         }
                     }
@@ -429,6 +569,59 @@ namespace DiscordWebAppBot
 
                         
                     }
+                });
+
+
+            commands.CreateCommand("help new user")
+                .Do(async (e) =>
+                {
+                    string message = 
+                        "__**New User Guide:**__ \n\n" +
+                        "*Welcome to the Internet Addicts Server.  Please read the #info_and_announcements channel to get yourself up to date with the rules, events, and other server happenings.* \n\n" +
+                        " __**Basic Info:**__\n\n" +
+                        " **Text and Voice Channels:**\n" +
+                        "• There are different text channels for different purposes (main chat, memes, music, fitness, etc.)  Please use the appropriate channels :)\n" +
+                        "• Same thing goes for voice channels on the left.  *Protip: If you want a quieter chating experience, check out one of the smaller size-limited voice channels!*\n\n" +
+                        " **Video Games:**\n" +
+                        "• If you play video games, be sure to set up your game roles so that you can easily find people to game with.  For more details, type **!help games**\n\n" +
+                        " **Events:**\n" +
+                        "• We host weekly server events.  For more information, type **!help events**  There are also in house gaming tournaments so keep an eye out for the next one!\n\n" +
+                        " **Secret Channels:**\n" +
+                        "• There are a few special channels that you will need to manually unlock access to: \n" +
+                        "        => Type **.iam nsfw** to unlock the nsfw channel.  \n" +
+                        "        => Type **.iam book club** to unlock the book club.\n" +
+                        "        => We have a private channel for venting/ranting/advice.  If you would like access to the **diary** channel, please contact a moderator or admin.\n\n" +
+
+                        " **Experience, levels, and currency:**\n" +
+                        "• You can earn *server experience*  while typing in chat.  Experience will level you up and you will unlock special roles at certain levels.  For example, level 3 unlocks the ability to embed images. \n" +
+                        "• You can earn *server currency* while typing in chat.  You can use this currency to gamble, buy other people, top the leaderboards, and win rewards at the end of the season.  For more information, type **!help currency** or **!help gambling**\n\n" +
+                        "If you have any other questions, feel free to contact a mod or admin.";
+
+                    await e.Channel.SendMessage(message);
+                });
+
+            commands.CreateCommand("help events")
+                .Do(async (e) =>
+                {
+                    await e.Channel.SendMessage("__**Event Information:**__  \n\n*tl;dr: There are weekly server events to watch movies, party, and play games together*  \n\n1) **Movie Nights** - A different movie every Friday night, voted on by the members.  \n2) **Drunk On Cam Nights** - Every Saturday on Rabbit.  \n**3) **TableTop Simulator** - Come play virtual board games with your virtual friends every Sunday.");
+                });
+
+            commands.CreateCommand("help games")
+                .Do(async (e) =>
+                {
+                    await e.Channel.SendMessage($"__**Game Role Commands:**__\n\n*tl;dr: Use the commands below to search through the list of games, add/remove games to yourself, and then find other users to play games with.*\n\n**.lsar** - See the list of all game roles available on the server.\n**.iam [game name]** - Add a game role to yourself.  Example: .iam Overwatch  \n**.iamnot [game name]** - Remove a game role from yourself.  \n**@[game name]** - You can ping game roles to notify players when you are looking for a group.  Example: 'Does anybody want to play @Overwatch ?'");
+                });
+
+            commands.CreateCommand("help currency")
+                .Do(async (e) =>
+                {
+                    await e.Channel.SendMessage($"__**ServerCurrency Information:**__  \n\n*tl;dr: Earn server currency by participating on the server, use it to gamble, buy waifus, and win rewards.*  \n\nThere are three ways to earn server currency - aka ***Very Important Points***  \n\n1) **Being active** - All active chatters receive some points every day.  \n2) **Winning bot games** - You can win points by winning at Trivia (no Hangman rewards yet sorry) or by joining a bot games race when it happens.  \n3) **Gambling** - You can gamble the points you already have to try to win more (Type '**!help gambling**' for more information on gambling)");
+                });
+
+            commands.CreateCommand("help gambling")
+                .Do(async (e) =>
+                {
+                    await e.Channel.SendMessage($"__**Gambling Information:**__  \n\n*tl;dr: You can gamble your points to earn more by one of the three ways listed below*  \n\n1) **bf [heads/tails] [amount]** - Guess the correct coin flip.  Example: $bf 10 tails \n2) **$br [amount]** - Roll the dice.  Example: $br 10  \n3) **$slot [amount]** - Play the slot machine.  Example: $slot 5  \n\n");
                 });
 
             discord.MessageDeleted += async (s, e) =>
