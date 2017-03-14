@@ -581,11 +581,11 @@ namespace DiscordWebAppBot
                         " __**Basic Info:**__\n\n" +
                         " **Text and Voice Channels:**\n" +
                         "• There are different text channels for different purposes (main chat, memes, music, fitness, etc.)  Please use the appropriate channels :)\n" +
-                        "• Same thing goes for voice channels on the left.  *Protip: If you want a quieter chating experience, check out one of the smaller size-limited voice channels!*\n\n" +
+                        "• Same thing goes for voice channels on the left.  *Protip: If you want a quieter chatting experience, check out one of the smaller size-limited voice channels!*\n\n" +
                         " **Video Games:**\n" +
                         "• If you play video games, be sure to set up your game roles so that you can easily find people to game with.  For more details, type **!help games**\n\n" +
                         " **Events:**\n" +
-                        "• We host weekly server events.  For more information, type **!help events**  There are also in house gaming tournaments so keep an eye out for the next one!\n\n" +
+                        "• We host weekly server events.  For more information, type **!help events** .  There are also in house gaming tournaments so keep an eye out for the next one!\n\n" +
                         " **Secret Channels:**\n" +
                         "• There are a few special channels that you will need to manually unlock access to: \n" +
                         "        => Type **.iam nsfw** to unlock the nsfw channel.  \n" +
@@ -609,7 +609,7 @@ namespace DiscordWebAppBot
             commands.CreateCommand("help games")
                 .Do(async (e) =>
                 {
-                    await e.Channel.SendMessage($"__**Game Role Commands:**__\n\n*tl;dr: Use the commands below to search through the list of games, add/remove games to yourself, and then find other users to play games with.*\n\n**.lsar** - See the list of all game roles available on the server.\n**.iam [game name]** - Add a game role to yourself.  Example: .iam Overwatch  \n**.iamnot [game name]** - Remove a game role from yourself.  \n**@[game name]** - You can ping game roles to notify players when you are looking for a group.  Example: 'Does anybody want to play @Overwatch ?'");
+                    await e.Channel.SendMessage($"__**Game Role Commands:**__\n\n*tl;dr: Use the commands below to search through the list of games, add/remove games to yourself, and then find other users to play games with.*\n\n**.lsar** - See the list of all game roles available on the server.\n**.iam [game name]** - Add a game role to yourself.  Example: .iam Overwatch  \n**.iamnot [game name]** - Remove a game role from yourself.  \n**@[game name]** - You can ping game roles to notify players when you are looking for a group.  Example: 'Does anybody want to play @Overwatch ?'  /n/n*See a game missing from the list?  If you want a new game added to the .lsar list, contact a moderator or admin!*");
                 });
 
             commands.CreateCommand("help currency")
@@ -622,6 +622,169 @@ namespace DiscordWebAppBot
                 .Do(async (e) =>
                 {
                     await e.Channel.SendMessage($"__**Gambling Information:**__  \n\n*tl;dr: You can gamble your points to earn more by one of the three ways listed below*  \n\n1) **bf [heads/tails] [amount]** - Guess the correct coin flip.  Example: $bf 10 tails \n2) **$br [amount]** - Roll the dice.  Example: $br 10  \n3) **$slot [amount]** - Play the slot machine.  Example: $slot 5  \n\n");
+                });
+
+            // movie night stuff:
+            commands.CreateCommand("create movie night")
+                .AddCheck((c, u, ch) => u.HasRole(ch.Server.FindRoles("badmin").FirstOrDefault()))
+                .Do(async (e) =>
+                {
+                    string message = "";
+
+                    using (var _db = new DiscordWebAppDb())
+                    {
+                        Console.WriteLine("Creating new Movie Night entity...");
+
+                        var movieNight = new DiscordWebApp.Models.MovieNight()
+                        {
+                            MovieNightName = "Default",
+                            DateCreated = DateTime.UtcNow,
+                            Movies = new List<DiscordWebApp.Models.Movie>()
+                        };
+
+                        _db.MovieNights.Add(movieNight);
+                        _db.SaveChanges();
+
+                        Console.WriteLine("Successfully created new Movie Night!");
+                        message = "Successfully created new Movie Night!";
+                    }
+
+                    await e.Channel.SendMessage(message);
+                });
+
+            commands.CreateCommand("movie add")
+                .AddCheck((c, u, ch) => u.HasRole(ch.Server.FindRoles("event host").FirstOrDefault()))
+                .Parameter("movieName", ParameterType.Required)
+                .Do(async (e) =>
+                {
+                    var movieName = e.GetArg("movieName");
+                    var message = "";
+
+                    using (var _db = new DiscordWebAppDb())
+                    {
+                        // get movie night object - harcoded for now, just one movienight object
+                        var movieNight = _db.MovieNights.Where(x => x.MovieNightName == "Default").FirstOrDefault();
+
+                        if (movieNight != null)
+                        {
+                            var newMovie = new DiscordWebApp.Models.Movie()
+                            {
+                                Name = movieName
+                            };
+                            movieNight.Movies.Add(newMovie);
+                            _db.SaveChanges();
+                            message = $"Successfully added movie to list - {movieName}";
+                        }
+                    }
+
+                    await e.Channel.SendMessage(message);
+                });
+
+            commands.CreateCommand("movie remove")
+                .AddCheck((c, u, ch) => u.HasRole(ch.Server.FindRoles("event host").FirstOrDefault()))
+                .Parameter("movieName", ParameterType.Required)
+                .Do(async (e) =>
+                {
+                    var movieName = e.GetArg("movieName");
+                    var message = "";
+
+                    using (var _db = new DiscordWebAppDb())
+                    {
+                        // get movie night object - harcoded for now, just one movienight object
+                        var movieNight = _db.MovieNights.Where(x => x.MovieNightName == "Default").FirstOrDefault();
+
+                        if (movieNight != null)
+                        {
+                            var movie = movieNight.Movies.Where(x => x.Name == movieName).FirstOrDefault();
+                            if (movie != null)
+                            {
+                                //movieNight.Movies.Remove(movie); - this only removes the reference, we want to remove the enter row?
+                                _db.Movies.Remove(movie);
+                                _db.SaveChanges();
+                                message = $"Successfully removed movie from list - {movieName}";
+                            }
+                            else
+                            {
+                                message = $"Error: {movieName} is not on the list.  Please enter a valid movie name.";
+                            }
+                        }
+                    }
+
+                    await e.Channel.SendMessage(message);
+                });
+
+            commands.CreateCommand("movie clear")
+                .AddCheck((c, u, ch) => u.HasRole(ch.Server.FindRoles("event host").FirstOrDefault()))
+                .Do(async (e) =>
+                {
+                    var message = "";
+                    using (var _db = new DiscordWebAppDb())
+                    {
+                        var movieCount = _db.Movies.Count();
+
+                        foreach (var movie in _db.Movies)
+                        {
+                            _db.Movies.Remove(movie);
+                        }
+                        _db.SaveChanges();
+                        message = $"Successfully removed all movies ({movieCount}) from list.";
+                    }
+
+                    await e.Channel.SendMessage(message);
+                });
+
+
+            commands.CreateCommand("movie time")
+                .AddCheck((c, u, ch) => u.HasRole(ch.Server.FindRoles("event host").FirstOrDefault()))
+                .Parameter("movieTime", ParameterType.Required)
+                .Do(async (e) =>
+                {
+                    var movieTime = e.GetArg("movieTime");
+                    var message = "";
+
+                    using (var _db = new DiscordWebAppDb())
+                    {
+                        // get movie night object - harcoded for now, just one movienight object
+                        var movieNight = _db.MovieNights.Where(x => x.MovieNightName == "Default").FirstOrDefault();
+
+                        if (movieNight != null)
+                        {
+                            movieNight.DateAndTime = movieTime;
+                            _db.SaveChanges();
+                            message = $"Successfully updated movie time! - {movieTime}";
+                        }
+                    }
+
+                    await e.Channel.SendMessage(message);
+                });
+
+            commands.CreateCommand("movie info")
+                .Do(async (e) =>
+                {
+                    var message = "";
+
+                    using (var _db = new DiscordWebAppDb())
+                    {
+                        string movieList = "";
+
+                        var movieNight = _db.MovieNights.Where(x => x.MovieNightName == "Default").FirstOrDefault();
+
+                        foreach (var movie in movieNight.Movies)
+                        {
+                            movieList += $"► {movie.Name}  \n";
+                        }
+
+                        var movieTime = String.IsNullOrEmpty(movieNight.DateAndTime) ? "TBA" : movieNight.DateAndTime;
+                        movieList = movieNight.Movies.Count > 0 ? movieList : "TBA \n";
+
+                        message = 
+                            $"__**Time:**__  \n{movieTime}  \n\n" +
+                            $"__**List of Movie Options** ({movieNight.Movies.Count()})__  \n" + movieList + "\n" +
+                            $"*Voting takes place 30 minutes before the movie start time.*";
+
+                    }
+
+                    await e.Channel.SendMessage(message);
                 });
 
             discord.MessageDeleted += async (s, e) =>

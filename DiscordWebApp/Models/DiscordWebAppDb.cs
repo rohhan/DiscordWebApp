@@ -14,5 +14,8 @@ namespace DiscordWebApp.Models
         }
         public DbSet<Server> Servers { get; set; }
         public DbSet<User> Users { get; set; }
+
+        public DbSet<MovieNight> MovieNights { get; set; }
+        public DbSet<Movie> Movies { get; set; }
     }
 }
