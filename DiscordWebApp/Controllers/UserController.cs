@@ -18,9 +18,9 @@ namespace DiscordWebApp.Controllers
         {
 
             // for sorting
-            ViewBag.SortNameParameter = string.IsNullOrEmpty(sortBy) ? "Name desc" : "";
+            ViewBag.SortDateJoindParameter = string.IsNullOrEmpty(sortBy) ? "DateJoined" : "";
+            ViewBag.SortNameParameter = sortBy == "Name" ? "Name desc" : "Name";
             ViewBag.SortLastActiveParameter = sortBy == "Active" ? "Active desc" : "Active";
-            ViewBag.SortDateJoindParameter = sortBy == "DateJoined" ? "DateJoined desc" : "DateJoined";
 
 
             // get server info
@@ -29,10 +29,11 @@ namespace DiscordWebApp.Controllers
             ViewBag.ServerId = server.Id;
 
             // start building model
+            // don't include users who have left
             var model =
                 server.Users
-                    .OrderBy(x => x.Username)
-                    .Where(x => searchTerm == null || x.Username.Contains(searchTerm));
+                    .Where(x => (searchTerm == null || x.Username.ToLower().Contains(searchTerm.ToLower())) &&(x.DateLeft == null))
+                    .OrderByDescending(x => x.DateJoined);
 
             // Sorting
             switch (sortBy)
@@ -43,17 +44,17 @@ namespace DiscordWebApp.Controllers
                 case "Active":
                     model = model.OrderBy(x => x.LastActive);
                     break;
-                case "DateJoined desc":
-                    model = model.OrderByDescending(x => x.DateJoined);
+                case "Name desc":
+                    model = model.OrderByDescending(x => x.Username);
+                    break;
+                case "Name":
+                    model = model.OrderBy(x => x.Username);
                     break;
                 case "DateJoined":
                     model = model.OrderBy(x => x.DateJoined);
                     break;
-                case "Name desc":
-                    model = model.OrderByDescending(x => x.Username);
-                    break;
                 default:
-                    model = model.OrderBy(x => x.Username);
+                    model = model.OrderByDescending(x => x.DateJoined);
                     break;
             }
 

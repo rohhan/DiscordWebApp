@@ -1,36 +1,146 @@
-﻿@model DiscordWebApp.Models.Server
+﻿@model DiscordWebApp.Models.UserInfoViewModel
 
 @{
     ViewBag.Title = "Details";
 }
 
-<h2>Details</h2>
+@section scripts {
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.5.0/Chart.min.js"></script>
+    <script>
 
-<div>
-    <h4>Server</h4>
+        var ctx = document.getElementById("myChart");
+
+        var data = {
+            labels: [
+                "Stayed",
+                "Left",
+            ],
+            datasets: [
+                {
+                    data: [@Model.NumNewUsersWhoStayed, @Model.NumNewUsersWhoLeft],
+                    backgroundColor: [
+                        "#36A2EB",
+                        "#FF6384"
+                    ],
+                    hoverBackgroundColor: [
+                        "#36A2EB",
+                        "#FF6384"
+                    ]
+                }]
+        };
+
+        var myPieChart = new Chart(ctx, {
+            type: 'pie',
+            data: data,
+            options: {
+                legend: {
+                    display: false
+                }
+            }
+        });
+
+
+    </script>
+    }
+
+<style>
+    .user-title {
+        font-weight: bold;
+        font-size: 1.5em;
+    }
+    .user-header {
+        font-weight: bold;
+        text-decoration: underline;
+        font-size: 1.5em;
+    }
+
+    .user-details {
+        font-weight: bold;
+        font-size: 3em;
+    }
+
+    .table-data {
+        font-size: 1.5em; 
+        font-weight: bold;
+    }
+
+    .stayed {
+        background-color: #36A2EB;
+    }
+
+    .left {
+        background-color: #FF6384;
+    }
+</style>
+
+<div class="container">
+    <h2>Details for @Model.GuildName</h2>
+
+    <p>
+        @Html.ActionLink("Edit", "Edit", new { id = Model.DbServerId }) |
+        @Html.ActionLink("Back to List", "Index")
+    </p>
     <hr />
-    <dl class="dl-horizontal">
-        <dt>
-            @Html.DisplayNameFor(model => model.Name)
-        </dt>
-
-        <dd>
-            @Html.DisplayFor(model => model.Name)
-        </dd>
-
-        <dt>
-            @Html.DisplayNameFor(model => model.ServerOwner)
-        </dt>
-
-        <dd>
-            @Html.DisplayFor(model => model.ServerOwner)
-        </dd>
-
-    </dl>
 </div>
-<p>
-    @Html.ActionLink("Edit", "Edit", new { id = Model.Id }) |
-    @Html.ActionLink("Back to List", "Index")
-</p>
 
-@Html.Action("Graph", Model.Id)
+<div class="container">
+    <div class="row">
+        <div class="col-sm-6">
+            <div class="panel panel-default">
+                <div class="panel-heading">
+                    <h3 class="panel-title user-title">Overview:</h3>
+                </div>
+                <div class="panel-body" style="height: 15em;">
+                    <div class="row">
+                        <div class="col-sm-6">
+                            <h4 class="user-header">Total User Count: </h4>
+                            <h3 class="user-details">@Model.TotalUserCount</h3>
+                        </div>
+                        <div class="col-sm-6">
+                            <h4 class="user-header">New Users (7 Days):</h4>
+                            <h3 class="user-details">@Model.NewUserCount</h3>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-sm-6">
+            <div class="panel panel-default">
+                <div class="panel-heading">
+                    <h3 class="panel-title user-title">New User Retention:</h3>
+                </div>
+                <div class="panel-body" style="height: 15em;">
+                    <div class="row">
+                        <div class="col-sm-4">
+                            <canvas id="myChart" width="400" height="400"></canvas>
+                        </div>
+                        <div class="col-sm-8">
+                            <div>
+                                <table class="table table-data">
+                                    <tbody>
+                                        <tr>
+                                            <td>User Retention:</td>
+                                            <td>@Model.NewUserPercentRetention%</td>
+                                        </tr>
+                                        <tr>
+                                            <td><span class="stayed">Stayed:</span></td>
+                                            <td>@Model.NumNewUsersWhoStayed</td>
+                                        </tr>
+                                        <tr>
+                                            <td><span class="left">Left:</span></td>
+                                            <td>@Model.NumNewUsersWhoLeft</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+
+@Html.Action("Graph", Model.DbServerId)

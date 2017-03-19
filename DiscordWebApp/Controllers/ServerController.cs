@@ -27,12 +27,65 @@ namespace DiscordWebApp.Controllers
             {
                 return new HttpStatusCodeResult(HttpStatusCode.BadRequest);
             }
-            Server server = db.Servers.Find(id);
-            if (server == null)
+
+            // get server info
+            Server currentServer = db.Servers.Find(id);
+
+            // get info for past N days
+            var numDays = 7;
+            var negativeNumDays = numDays * -1;
+
+            if (currentServer == null)
             {
                 return HttpNotFound();
             }
-            return View(server);
+            else
+            {
+                // new users info for the past N days
+                var numNewUsers =
+                currentServer
+                    .Users
+                    .GroupBy(x => x.UserId) // because one user might have multiple rows (leave/rejoin)
+                    .Select(x => x.First())
+                    .Where(x => x.DateJoined >= DateTime.UtcNow.Date.AddDays(negativeNumDays))
+                    .ToList()
+                    .Count();
+
+                var numNewUsersWhoLeft =
+                    currentServer
+                    .Users
+                    .GroupBy(x => x.UserId)
+                    .Select(x => x.First())
+                    .Where(x => (x.DateJoined >= DateTime.UtcNow.Date.AddDays(negativeNumDays)) && (x.DateLeft >= DateTime.UtcNow.Date.AddDays(negativeNumDays)))
+                    .ToList()
+                    .Count();
+
+                var numNewUsersWhoStayed = numNewUsers - numNewUsersWhoLeft;
+                var percentRetention = (int)Math.Round((double)(100 * numNewUsersWhoStayed) / numNewUsers);
+
+                var numTotalUsers =
+                    currentServer
+                    .Users
+                    .GroupBy(x => x.UserId)
+                    .Select(x => x.First())
+                    .Where(x => x.DateLeft == null)
+                    .ToList()
+                    .Count();
+
+                UserInfoViewModel model = new UserInfoViewModel()
+                {
+                    DbServerId = currentServer.Id,
+                    GuildName = currentServer.Name,
+                    TotalUserCount = numTotalUsers,
+                    NewUserCount = numNewUsers,
+                    NumNewUsersWhoStayed = numNewUsersWhoStayed,
+                    NumNewUsersWhoLeft = numNewUsersWhoLeft,
+                    NewUserPercentRetention = percentRetention
+                };
+
+                return View(model);
+            }
+            
         }
 
         // GET: Server/Create
@@ -115,11 +168,21 @@ namespace DiscordWebApp.Controllers
             return RedirectToAction("Index");
         }
 
-        // Graph stuff
+        // user growth graph stuff
         public ActionResult Graph([Bind(Prefix = "id" )] int serverId)
         {
-            var server = db.Servers.Find(serverId);
-            var users = server.Users.OrderBy(x => x.DateJoined).ToList();
+            var currentServer = db.Servers.Find(serverId);
+
+            // not completely accurate - this only shows current users
+            // we want to also add users who have left to the graph
+            var users =
+                    currentServer
+                    .Users
+                    .GroupBy(x => x.UserId)
+                    .Select(x => x.First())
+                    .Where(x => x.DateLeft == null)
+                    .OrderBy(x => x.DateJoined)
+                    .ToList();
 
             return PartialView("_Graph", users);
         }

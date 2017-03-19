@@ -1,53 +1,68 @@
 ﻿@model PagedList.IPagedList<DiscordWebApp.Models.User>
 
 <div id="userList">
-    <form method="get">
-        <input type="search" name="searchTerm"/>
-        <input type="submit" value="Search by Username"/>
-    </form>
-    <div class="pagedList" data-dwa-target="#userList">
-        @Html.PagedListPager(Model, page => Url.Action("Index", new { page, searchTerm = Request["searchTerm"], sortBy = Request["sortBy"] }),
-       PagedListRenderOptions.MinimalWithItemCountText)
+    <div class="panel panel-default">
+        <div class="panel-heading">
+            <div class="row">
+                <div class="col-sm-4">
+                    <h3>User List</h3>
+                </div>
+                <div class="col-sm-8" >
+                    <form method="get" class="form-inline text-right">
+                        <div style="padding-top: 15px;">
+                            <input type="search" name="searchTerm" class="form-control" />
+                            <input type="submit" value="Search" class="form-control btn btn-primary"  />
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+        <div class="panel-body">
+            <table class="table">
+                <tr>
+                    <th>
+                        @Html.ActionLink("Date Joined", "Index", new { sortBy = ViewBag.SortDateJoindParameter, searchTerm = Request.QueryString["searchTerm"], id = ViewBag.ServerId })
+                    </th>
+                    <th>
+                        @Html.ActionLink("Username", "Index", new { sortBy = ViewBag.SortNameParameter, searchTerm = Request.QueryString["searchTerm"], id = ViewBag.ServerId })
+                    </th>
+                    <th>
+                        User Id
+                    </th>
+                    <th>
+                        @Html.ActionLink("Last Active", "Index", new { sortBy = ViewBag.SortLastActiveParameter, searchTerm = Request.QueryString["searchTerm"], id = ViewBag.ServerId })
+                    </th>
+                    <th></th>
+                </tr>
+
+                @foreach (var item in Model)
+                {
+                    <tr>
+                        <td>
+                            @Html.DisplayFor(modelItem => item.DateJoined)
+                        </td>
+                        <td>
+                            @Html.DisplayFor(modelItem => item.Username)
+                        </td>
+                        <td>
+                            @Html.DisplayFor(modelItem => item.UserId)
+                        </td>
+                        <td>
+                            @Html.DisplayFor(modelItem => item.LastActive)
+                        </td>
+                        <td>
+                            @Html.ActionLink("Edit", "Edit", new { id = item.Id }) |
+                            @Html.ActionLink("Details", "Details", new { id = item.Id }) |
+                            @Html.ActionLink("Delete", "Delete", new { id = item.Id })
+                        </td>
+                    </tr>
+                }
+            </table>
+
+            <div class="pagedList text-center" data-dwa-target="#userList">
+                @Html.PagedListPager(Model, page => Url.Action("Index", new { page, searchTerm = Request["searchTerm"], sortBy = Request["sortBy"] }),
+                PagedListRenderOptions.MinimalWithItemCountText)
+            </div>
+        </div>
     </div>
-    <table class="table">
-        <tr>
-            <th>
-                @Html.ActionLink("Username", "Index", new { sortBy = ViewBag.SortNameParameter, searchTerm = Request.QueryString["searchTerm"], id = ViewBag.ServerId })
-            </th>
-            <th>
-                User Id
-            </th>
-            <th>
-                @Html.ActionLink("Date Joined", "Index", new { sortBy = ViewBag.SortDateJoindParameter, searchTerm = Request.QueryString["searchTerm"], id = ViewBag.ServerId })
-            </th>
-            <th>
-                @Html.ActionLink("Last Active", "Index", new { sortBy = ViewBag.SortLastActiveParameter, searchTerm = Request.QueryString["searchTerm"], id = ViewBag.ServerId })
-            </th>
-            <th></th>
-        </tr>
-
-        @foreach (var item in Model)
-        {
-            <tr>
-                <td>
-                    @Html.DisplayFor(modelItem => item.Username)
-                </td>
-                <td>
-                    @Html.DisplayFor(modelItem => item.UserId)
-                </td>
-                <td>
-                    @Html.DisplayFor(modelItem => item.DateJoined)
-                </td>
-                <td>
-                    @Html.DisplayFor(modelItem => item.LastActive)
-                </td>
-                <td>
-                    @Html.ActionLink("Edit", "Edit", new { id = item.Id }) |
-                    @Html.ActionLink("Details", "Details", new { id = item.Id }) |
-                    @Html.ActionLink("Delete", "Delete", new { id = item.Id })
-                </td>
-            </tr>
-        }
-
-    </table>
 </div>

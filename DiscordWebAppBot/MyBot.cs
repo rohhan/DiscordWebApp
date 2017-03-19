@@ -367,7 +367,7 @@ namespace DiscordWebAppBot
                                 var numNewUsers = 
                                     currentServer
                                         .Users
-                                        .GroupBy(x => x.UserId)
+                                        .GroupBy(x => x.UserId) // because one user might have multiple rows (leave/rejoin)
                                         .Select(x => x.First())
                                         .Where(x => x.DateJoined >= DateTime.UtcNow.Date.AddDays(negativeNumDays))
                                         .ToList()
