@@ -16,6 +16,24 @@ ___
 - Because Discord does not natively track user activity (only how often users are online), this allows me to have a better understanding of who is using the server and how often.
 - The bot utilizes Entity Framework to save all data to a SQL database.
 - The bot also has various Quality of Life features such as *New User Guides*, a tool to help moderators plan movie nights, a command to display user statistics, and more.
+
+Bot Commands:
+
+
+| Command       | Value         | Description  |
+| ------------- |:-------------:| -----|
+| !update users         |                     |   Syncs up the local DB userlist with the remote Discord userlist (in case of discrepancies due to bot down-time) |
+| !update active users  |                     |    Assigns an "active" role to users who have participated in the past week.  Removes "active" role from those who have not participated.  Displays total number of active users. |
+| !users overview       | ["number of days"]  |    Displays new user info (retention, activity, etc) and existing user decay for the past N days |
+| !movie info           |                     | Displays the movie event date/time and list of movie selections |
+| !movie add            | ["movie name"]      |   Add a movie to the voting list |
+| !movie remove         | ["movie name"]      |    Remove a movie from the voting list |
+| !movie clear          |                     |    Clear all movies from the list |
+| !movie time           | ["date/time"]       |  Update the time of the event |
+| !help new user        |                     |    Displays a *New User Guide* |
+| !help games           |                     |    Displays a guide on how to self-assign game-roles |
+| !help gambling        |                     |    Displays a tutorial on using the server currency |
+| !help events          |                     |    Displays info about weekly events |
 ___
 *Note: For this personal project, I am just using the local SQL Server Developer's Edition that comes with Visual Studio 2015 (Community Edition).  I am also running the bot locally.
 In the future, I hope to deploy the application to the cloud using Microsoft Azure.*
@@ -38,14 +56,3 @@ Example of what the searchable User List looks like:
 
 ![User List](http://i.imgur.com/eGBpFGy.png "User List")
 
-Example of a bot command that goes through the list of users and assigns a role of "Active" to all users who have participated in the chat in the past week:
-
-![Active Users](http://i.imgur.com/7BoeJer.png "Active Users")
-
-Example of a bot command that provides a basic new user overview for the past N days:
-
-![New Users Overview](http://i.imgur.com/LEUMvPt.png "New Users Overview")
-
-Example of a group of bot commands that take input to update information about an event which can then be displayed to users:
-
-![Movie Night](http://i.imgur.com/o5szYru.png "Movie Night")
