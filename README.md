@@ -2,7 +2,7 @@
 
 *Work in Progress.*
 
-This project was made to organize data, and provide Quality of Life features to help me better run my online community.
+This project was made to provide a set of tools for managing online (Discord-based) communities.
 
 This repository contains the entire solution for my personal project.  The two main parts are:
 1) A bot that gathers data and providers server members with helpful commands and tools.
