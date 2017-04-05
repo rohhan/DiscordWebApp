@@ -45,6 +45,7 @@ namespace DiscordWebAppBot
                 .Parameter("GreetedPerson", ParameterType.Optional)
                 .Do(async (e) =>
                 {
+                    
                     await e.Channel.SendMessage($"this is a test for {e.User.Name}");
                 });
 
@@ -106,7 +107,7 @@ namespace DiscordWebAppBot
                         await e.Channel.SendMessage($"You do not have permission to run that command.");
                     }
                 });
-            
+
             // note: Last Activity and Last Online are tracked by bot, not pulled from discord 
             // so they will be null when seeding unless bot is kept online
             commands.CreateCommand("update users")
@@ -220,14 +221,14 @@ namespace DiscordWebAppBot
                             //var currentServer = _db.Servers.Where(s => s.GuildId == serverIdString).SingleOrDefault();
 
                             //var users = currentServer.Users.Where(x => x.GuildId == serverIdString);
-                            
+
 
                             //foreach (var user in users)
                             //{
                             //    _db.Users.Remove(user);
                             //}
                             //_db.SaveChanges();
-                            
+
 
                             //userList.Delete(x => x.GuildId == serverIdString);
 
@@ -286,25 +287,40 @@ namespace DiscordWebAppBot
 
                                 try
                                 {
-                                    if (currentUser.LastActive >= DateTime.UtcNow.Date.AddDays(-7))
+                                    if (currentUser != null)
                                     {
-                                        numActive++;
-                                        // don't assign if already has role or if is owner 
-                                        if (!user.HasRole(activeRole) && user.Id != 270645134226489344)
+                                        if (currentUser.LastActive >= DateTime.UtcNow.Date.AddDays(-7))
                                         {
-                                            await user.AddRoles(activeRole);
+                                            numActive++;
+                                            // don't assign if already has role or if is owner 
+                                            if (!user.HasRole(activeRole) && user.Id != 270645134226489344)
+                                            {
+                                                await user.AddRoles(activeRole);
+                                            }
+                                        }
+                                        else
+                                        {
+                                            numInactive++;
+
+                                            if (user.HasRole(activeRole))
+                                            {
+                                                await user.RemoveRoles(activeRole);
+                                            }
+
                                         }
                                     }
                                     else
                                     {
-                                        numInactive++;
-
-                                        if (user.HasRole(activeRole))
+                                        var newUser = new DiscordWebApp.Models.User()
                                         {
-                                            await user.RemoveRoles(activeRole);
-                                        }
-
+                                            GuildId = serverIdString,
+                                            DateJoined = user.JoinedAt,
+                                            UserId = user.Id.ToString(),
+                                            Username = user.ToString()
+                                        };
+                                        Console.WriteLine($"Created new user - {user}");
                                     }
+                                    
                                 }
                                 catch
                                 {
@@ -312,19 +328,20 @@ namespace DiscordWebAppBot
                                     // If users join when bot is down and db isn't updated, error will be thrown here
                                     Console.WriteLine($"Caught an error");
                                 }
-                                
+
                             }
 
-                            await e.Channel.SendMessage($"Successfully updated active users.  Active users in the past 7 days: **{numActive}**.  Inactive users in the past 7 days: {numInactive}");
+                            await e.Channel.SendMessage($"Successfully updated active users.  Active users in the past 7 days: **{numActive}**.  Inactive users in the past 7 days: **{numInactive}**");
                         }
                         else
                         {
                             await e.Channel.SendMessage($"Error: Missing role.");
                         }
 
-                        
+
                     }
                 });
+
 
             // display total user count
             commands.CreateCommand("usercount")
@@ -364,7 +381,7 @@ namespace DiscordWebAppBot
                                 // also might want to check for just who left vs who stayed
 
                                 // New users:
-                                var numNewUsers = 
+                                var numNewUsers =
                                     currentServer
                                         .Users
                                         .GroupBy(x => x.UserId) // because one user might have multiple rows (leave/rejoin)
@@ -409,7 +426,7 @@ namespace DiscordWebAppBot
                                 var percentTalkedAndLeft = (int)Math.Round((double)(100 * numNewUsersWhoTalkedThenLeft) / numNewUsersWhoLeft);
 
                                 // Existing users:
-                                var numTotalUsersWhoLeft = 
+                                var numTotalUsersWhoLeft =
                                     currentServer
                                         .Users
                                         .GroupBy(x => x.UserId)
@@ -428,7 +445,7 @@ namespace DiscordWebAppBot
                                         .ToList()
                                         .Count();
 
-                                var numTotalOldUsers = 
+                                var numTotalOldUsers =
                                     currentServer
                                         .Users
                                         .GroupBy(x => x.UserId)
@@ -450,7 +467,7 @@ namespace DiscordWebAppBot
 
                                 Console.WriteLine(numTotalUsers);
                                 Console.WriteLine(totes);
-                                
+
                                 // JOIN DATA
 
                                 // LEAVE DATA
@@ -458,7 +475,7 @@ namespace DiscordWebAppBot
                                 // RETENTION
 
                                 //var numOldUsersWhoLeft = numTotalUsersWhoLeft - numNewUsersWhoLeft;
-                                
+
                                 var oldie = totes - numNewUsers;
                                 var percentDecay = (int)Math.Round((double)(100 * numOldUsersWhoLeft) / numTotalOldUsers);// how many older users are leaving (don't include new users when calculating percent)
 
@@ -567,15 +584,15 @@ namespace DiscordWebAppBot
                             await e.Channel.SendMessage("There was an error.");
                         }
 
-                        
+
                     }
                 });
 
-
+            // help commands:
             commands.CreateCommand("help new user")
                 .Do(async (e) =>
                 {
-                    string message = 
+                    string message =
                         "__**New User Guide:**__ \n\n" +
                         "*Welcome to the Internet Addicts Server.  Please read the #info_and_announcements channel to get yourself up to date with the rules, events, and other server happenings.* \n\n" +
                         " __**Basic Info:**__\n\n" +
@@ -603,13 +620,13 @@ namespace DiscordWebAppBot
             commands.CreateCommand("help events")
                 .Do(async (e) =>
                 {
-                    await e.Channel.SendMessage("__**Event Information:**__  \n\n*tl;dr: There are weekly server events to watch movies, party, and play games together*  \n\n1) **Movie Nights** - A different movie every Friday night, voted on by the members.  \n2) **Drunk On Cam Nights** - Every Saturday on Rabbit.  \n**3) **TableTop Simulator** - Come play virtual board games with your virtual friends every Sunday.");
+                    await e.Channel.SendMessage("__**Event Information:**__  \n\n*tl;dr: There are weekly server events to watch movies, party, and play games together*  \n\n1) **Movie Nights** - A different movie every Friday night, voted on by the members.  \n2) **Drunk On Cam Nights** - Every Saturday on Rabbit.  \n3) **TableTop Simulator** - Come play virtual board games with your virtual friends every Sunday.");
                 });
 
             commands.CreateCommand("help games")
                 .Do(async (e) =>
                 {
-                    await e.Channel.SendMessage($"__**Game Role Commands:**__\n\n*tl;dr: Use the commands below to search through the list of games, add/remove games to yourself, and then find other users to play games with.*\n\n**.lsar** - See the list of all game roles available on the server.\n**.iam [game name]** - Add a game role to yourself.  Example: .iam Overwatch  \n**.iamnot [game name]** - Remove a game role from yourself.  \n**@[game name]** - You can ping game roles to notify players when you are looking for a group.  Example: 'Does anybody want to play @Overwatch ?'  /n/n*See a game missing from the list?  If you want a new game added to the .lsar list, contact a moderator or admin!*");
+                    await e.Channel.SendMessage($"__**Game Role Commands:**__\n\n*tl;dr: Use the commands below to search through the list of games, add/remove games to yourself, and then find other users to play games with.*\n\n**.lsar** - See the list of all game roles available on the server.\n**.iam [game name]** - Add a game role to yourself.  Example: .iam Overwatch  \n**.iamnot [game name]** - Remove a game role from yourself.  \n**@[game name]** - You can ping game roles to notify players when you are looking for a group.  Example: 'Does anybody want to play @Overwatch ?'  \n\n*See a game missing from the list?  If you want a new game added to the .lsar list, contact a moderator or admin!*");
                 });
 
             commands.CreateCommand("help currency")
@@ -734,6 +751,7 @@ namespace DiscordWebAppBot
                 });
 
 
+
             commands.CreateCommand("movie time")
                 .AddCheck((c, u, ch) => u.HasRole(ch.Server.FindRoles("event host").FirstOrDefault()))
                 .Parameter("movieTime", ParameterType.Required)
@@ -777,7 +795,7 @@ namespace DiscordWebAppBot
                         var movieTime = String.IsNullOrEmpty(movieNight.DateAndTime) ? "TBA" : movieNight.DateAndTime;
                         movieList = movieNight.Movies.Count > 0 ? movieList : "TBA \n";
 
-                        message = 
+                        message =
                             $"__**Time:**__  \n{movieTime}  \n\n" +
                             $"__**List of Movie Options** ({movieNight.Movies.Count()})__  \n" + movieList + "\n" +
                             $"*Voting takes place 30 minutes before the movie start time.*";
@@ -785,6 +803,433 @@ namespace DiscordWebAppBot
                     }
 
                     await e.Channel.SendMessage(message);
+                });
+
+            // anonymous commands
+            commands.CreateCommand("help anon")
+                .Do(async (e) =>
+                {
+                    var message = "";
+                    message = "__**Anonymous Posting Guide:**__\n\n" +
+                    "• Type `!anon diary \"message\"` inside a direct message to Alfred Bot.\n" +
+                    "• Type `!anon shitpost \"message\"` inside a direct message to Alfred Bot.\n" +
+                    "• Type `!anon \"message\"` inside a channel to post anonymously (LESS SECURE METHOD).\n\n" +
+                    "__**You must post your message in quotations!**__\n\n" +
+                    "    => !anon \"It's a secret!\" - **Good** \n" +
+                    "    => !anon It's a secret! - **Bad** \n\n" +
+                    "• Your message will be posted with an anonymous ID\n" +
+                    "• You can respond to messages with the same ID for on hour.  After that, your ID will be reset.\n" +
+                    "• If you want to manually reset your ID before one hour is up, type **!anon reset**\n\n" +
+                    "***NOTE**: Due to lag and some android glitches, the only way to guarantee your message will be anonymous is to direct message through the bot.*";
+
+                    await e.Channel.SendMessage(message);
+                });
+
+            commands.CreateCommand("lookup")
+                .Parameter("anonId", ParameterType.Required)
+                .Do(async (e) =>
+                {
+                    // TO DO: probably shouldnt hardcore channel names
+                    if (e.Channel.Name == "mods" || e.Channel.Name == "batcave")
+                    {
+                        using (var _db = new DiscordWebAppDb())
+                        {
+                            var message = "";
+                            int anonId;
+
+                            bool isValid = int.TryParse(e.GetArg("anonId"), out anonId);
+
+                            if (isValid)
+                            {
+                                // get server and user info
+                                var serverIdString = e.Server.Id.ToString();
+                                var currentServer = _db.Servers.Where(g => g.GuildId == serverIdString).SingleOrDefault();
+
+                                // get user
+                                var user =
+                                _db.Users
+                                    .Where(u => (u.GuildId == serverIdString) && (u.RandomId == anonId))
+                                    .OrderByDescending(x => x.DateJoined)
+                                    .FirstOrDefault();
+
+                                if (user != null)
+                                {
+                                    var username = user.Username;
+                                    message = $"User: {username}";
+                                }
+
+                            }
+                            else
+                            {
+                                message = "Please enter a valid ID";
+                            }
+
+                            await e.Channel.SendMessage(message);
+                        }
+                    }
+                    
+                });
+
+            commands.CreateCommand("anon")
+                .Parameter("message", ParameterType.Required)
+                .Do(async (e) =>
+                {
+                    using (var _db = new DiscordWebAppDb())
+                    {
+                        if (e.Server != null)
+                        {
+                            if (e.Channel.Name == "dear_diary" || e.Channel.Name == "gen_chat_shitposting" || e.Channel.Name == "batcave")
+                            {
+                                // get server and user info
+                                var serverIdString = e.Server.Id.ToString();
+                                var currentServer = _db.Servers.Where(g => g.GuildId == serverIdString).SingleOrDefault();
+
+                                var userId = e.User.Id.ToString();
+
+                                // get message
+                                var message = e.GetArg("message");
+                                if (message.Contains("@everyone"))
+                                {
+                                    message = message.Replace("@everyone", "'everyone'");
+                                }
+                                if (message.Contains("@here"))
+                                {
+                                    message = message.Replace("@here", "'here'");
+                                }
+
+                                // get user
+                                var user =
+                                _db.Users
+                                    .Where(u => (u.GuildId == serverIdString) && (u.UserId == userId))
+                                    .OrderByDescending(x => x.DateJoined)
+                                    .FirstOrDefault();
+
+                                if (user != null)
+                                {
+                                    // update random id for user if it's blank or older than an hour
+                                    var lastRandomized = user.RandomIdUpdateTime;
+                                    var randomId = 0;
+
+                                    if (lastRandomized == null || lastRandomized <= DateTime.UtcNow.AddHours(-1))
+                                    {
+                                        Random rnd = new Random();
+                                        randomId = rnd.Next(100000000);
+                                        user.RandomId = randomId;
+                                        user.RandomIdUpdateTime = DateTime.UtcNow;
+                                    }
+                                    else
+                                    {
+                                        randomId = user.RandomId;
+                                    }
+
+                                    // save changes to db
+                                    _db.SaveChanges();
+
+                                    await e.Message.Delete();
+                                    await e.Channel.SendMessage($"**Anon {randomId}**: {message}");
+                                }
+                                else
+                                {
+                                    // if user == null, create user
+                                    // create new user
+                                    var newUser = new DiscordWebApp.Models.User()
+                                    {
+                                        GuildId = serverIdString,
+                                        DateJoined = e.User.JoinedAt,
+                                        UserId = e.User.Id.ToString(),
+                                        Username = e.User.ToString()
+                                    };
+
+                                    // update random id for user if it's blank or older than an hour
+                                    var lastRandomized = newUser.RandomIdUpdateTime;
+                                    var randomId = 0;
+
+                                    if (lastRandomized == null || lastRandomized <= DateTime.UtcNow.AddHours(-1))
+                                    {
+                                        Random rnd = new Random();
+                                        randomId = rnd.Next(100000000);
+                                        newUser.RandomId = randomId;
+                                        newUser.RandomIdUpdateTime = DateTime.UtcNow;
+                                    }
+                                    else
+                                    {
+                                        randomId = newUser.RandomId;
+                                    }
+
+                                    // add user to server
+                                    currentServer.Users.Add(newUser);
+
+                                    // save changes to db
+                                    _db.SaveChanges();
+
+                                    await e.Message.Delete();
+                                    await e.Channel.SendMessage($"**Anon {randomId}**: {message}");
+
+                                }
+                            }   
+                        }
+                    }
+                });
+
+            // message into server from DMs
+            commands.CreateCommand("anon diary")
+                .Parameter("message", ParameterType.Required)
+                .Do(async (e) =>
+                {
+                    // get server, channel, and role
+                    var server = discord.FindServers("Internet Addicts").FirstOrDefault();
+                    var logChannel = server.FindChannels("dear_diary").FirstOrDefault();
+                    var diaryRole = server.FindRoles("dear diary").FirstOrDefault();
+
+                    var _u = server.GetUser(e.User.Id);
+
+                    if (e.Server == null && _u.HasRole(diaryRole))
+                    {
+                        using (var _db = new DiscordWebAppDb())
+                        {
+                            // get server and user info
+                            var serverIdString = server.Id.ToString();
+                            var currentServer = _db.Servers.Where(g => g.GuildId == serverIdString).SingleOrDefault();
+
+                            var userId = e.User.Id.ToString();
+
+                            // get message
+                            var message = e.GetArg("message");
+                            if (message.Contains("@everyone"))
+                            {
+                                message = message.Replace("@everyone", "'everyone'");
+                            }
+                            if (message.Contains("@here"))
+                            {
+                                message = message.Replace("@here", "'here'");
+                            }
+
+                            // get user
+                            var user =
+                            _db.Users
+                                .Where(u => (u.GuildId == serverIdString) && (u.UserId == userId))
+                                .OrderByDescending(x => x.DateJoined)
+                                .FirstOrDefault();
+
+                            if (user != null)
+                            {
+                                // update random id for user if it's blank or older than an hour
+                                var lastRandomized = user.RandomIdUpdateTime;
+                                var randomId = 0;
+
+                                if (lastRandomized == null || lastRandomized <= DateTime.UtcNow.AddHours(-1))
+                                {
+                                    Random rnd = new Random();
+                                    randomId = rnd.Next(100000000);
+                                    user.RandomId = randomId;
+                                    user.RandomIdUpdateTime = DateTime.UtcNow;
+                                }
+                                else
+                                {
+                                    randomId = user.RandomId;
+                                }
+
+                                // save changes to db
+                                _db.SaveChanges();
+
+                                await e.User.SendMessage("Successfully posted to the **dear_diary** channel!");
+                                await logChannel.SendMessage($"**Anon {randomId}**: {message}");
+                            }
+                            else
+                            {
+                                // if user == null, create user
+                                // create new user
+                                var newUser = new DiscordWebApp.Models.User()
+                                {
+                                    GuildId = serverIdString,
+                                    DateJoined = e.User.JoinedAt,
+                                    UserId = e.User.Id.ToString(),
+                                    Username = e.User.ToString()
+                                };
+
+                                // update random id for user if it's blank or older than an hour
+                                var lastRandomized = newUser.RandomIdUpdateTime;
+                                var randomId = 0;
+
+                                if (lastRandomized == null || lastRandomized <= DateTime.UtcNow.AddHours(-1))
+                                {
+                                    Random rnd = new Random();
+                                    randomId = rnd.Next(100000000);
+                                    newUser.RandomId = randomId;
+                                    newUser.RandomIdUpdateTime = DateTime.UtcNow;
+                                }
+                                else
+                                {
+                                    randomId = newUser.RandomId;
+                                }
+
+                                // add user to server
+                                currentServer.Users.Add(newUser);
+
+                                // save changes to db
+                                _db.SaveChanges();
+
+                                await e.User.SendMessage("Successfully posted to the **dear_diary** channel!");
+                                await logChannel.SendMessage($"**Anon {randomId}**: {message}");
+
+                            }
+                        }
+                    }
+                });
+
+            // message into server from DMs
+            commands.CreateCommand("anon shitpost")
+                .Parameter("message", ParameterType.Required)
+                .Do(async (e) =>
+                {
+                    if (e.Server == null)
+                    {
+                        // get server and channel
+                        var server = discord.FindServers("Internet Addicts").FirstOrDefault();
+                        var logChannel = server.FindChannels("gen_chat_shitposting").FirstOrDefault();
+
+                        using (var _db = new DiscordWebAppDb())
+                        {
+                            // get server and user info
+                            var serverIdString = server.Id.ToString();
+                            var currentServer = _db.Servers.Where(g => g.GuildId == serverIdString).SingleOrDefault();
+
+                            var userId = e.User.Id.ToString();
+
+                            // get message
+                            var message = e.GetArg("message");
+                            if (message.Contains("@everyone"))
+                            {
+                                message = message.Replace("@everyone", "'everyone'");
+                            }
+                            if (message.Contains("@here"))
+                            {
+                                message = message.Replace("@here", "'here'");
+                            }
+
+                            // get user
+                            var user =
+                            _db.Users
+                                .Where(u => (u.GuildId == serverIdString) && (u.UserId == userId))
+                                .OrderByDescending(x => x.DateJoined)
+                                .FirstOrDefault();
+
+                            if (user != null)
+                            {
+                                // update random id for user if it's blank or older than an hour
+                                var lastRandomized = user.RandomIdUpdateTime;
+                                var randomId = 0;
+
+                                if (lastRandomized == null || lastRandomized <= DateTime.UtcNow.AddHours(-1))
+                                {
+                                    Random rnd = new Random();
+                                    randomId = rnd.Next(100000000);
+                                    user.RandomId = randomId;
+                                    user.RandomIdUpdateTime = DateTime.UtcNow;
+                                }
+                                else
+                                {
+                                    randomId = user.RandomId;
+                                }
+
+                                // save changes to db
+                                _db.SaveChanges();
+
+                                await e.User.SendMessage("Successfully posted to the **gen_chat_shitposting** channel!");
+                                await logChannel.SendMessage($"**Anon {randomId}**: {message}");
+                            }
+                            else
+                            {
+                                // if user == null, create user
+                                // create new user
+                                var newUser = new DiscordWebApp.Models.User()
+                                {
+                                    GuildId = serverIdString,
+                                    DateJoined = e.User.JoinedAt,
+                                    UserId = e.User.Id.ToString(),
+                                    Username = e.User.ToString()
+                                };
+
+                                // update random id for user if it's blank or older than an hour
+                                var lastRandomized = newUser.RandomIdUpdateTime;
+                                var randomId = 0;
+
+                                if (lastRandomized == null || lastRandomized <= DateTime.UtcNow.AddHours(-1))
+                                {
+                                    Random rnd = new Random();
+                                    randomId = rnd.Next(100000000);
+                                    newUser.RandomId = randomId;
+                                    newUser.RandomIdUpdateTime = DateTime.UtcNow;
+                                }
+                                else
+                                {
+                                    randomId = newUser.RandomId;
+                                }
+
+                                // add user to server
+                                currentServer.Users.Add(newUser);
+
+                                // save changes to db
+                                _db.SaveChanges();
+
+                                await e.User.SendMessage("Successfully posted to the **gen_chat_shitposting** channel!");
+                                await logChannel.SendMessage($"**Anon {randomId}**: {message}");
+
+                            }
+                        }
+                    }
+                });
+
+            // reset anon id (before the one hour is up)
+            commands.CreateCommand("anon reset")
+                .Do(async (e) =>
+                {
+                    using (var _db = new DiscordWebAppDb())
+                    {
+                        // get server and user info
+                        var serverIdString = "";
+                        if (e.Server == null)
+                        {
+                            var server = discord.FindServers("Internet Addicts").FirstOrDefault();
+                            serverIdString = server.Id.ToString();
+                        }
+                        else
+                        {
+                            serverIdString = e.Server.Id.ToString();
+                        }
+                        var currentServer = _db.Servers.Where(g => g.GuildId == serverIdString).SingleOrDefault();
+
+                        var userId = e.User.Id.ToString();
+
+                        // get user
+                        var user =
+                        _db.Users
+                            .Where(u => (u.GuildId == serverIdString) && (u.UserId == userId))
+                            .OrderByDescending(x => x.DateJoined)
+                            .FirstOrDefault();
+
+                        var randomId = 0;
+
+                        if (user != null)
+                        {
+                            Random rnd = new Random();
+                            randomId = rnd.Next(100000000);
+                            user.RandomId = randomId;
+                            user.RandomIdUpdateTime = DateTime.UtcNow;
+                        }
+
+                        _db.SaveChanges();
+
+                        // delete if in server, not in PMs
+                        if (e.Server != null)
+                        {
+                            await e.Message.Delete();
+                        }
+                        
+
+                    }
+
+                    
                 });
 
             discord.MessageDeleted += async (s, e) =>
@@ -910,22 +1355,35 @@ namespace DiscordWebAppBot
                 {
                     using (var _db = new DiscordWebAppDb())
                     {
-                        // get server and user info
-                        var serverIdString = e.Server.Id.ToString();
-                        var currentServer = _db.Servers.Where(g => g.GuildId == serverIdString).SingleOrDefault();
-
-                        var userId = e.User.Id.ToString();
-
-
-                        // select user
-                        // select most recent user match from db since same user might leave and come back
-                        var user = _db.Users.Where(u => (u.GuildId == serverIdString) && (u.UserId == userId)).OrderByDescending(x => x.DateJoined).FirstOrDefault();
-                        if (user != null)
+                        if (e.Server != null)
                         {
-                            user.LastActive = DateTime.UtcNow;
-                            _db.SaveChanges();
+                            // get server and user info
+                            var serverIdString = e.Server.Id.ToString();
+                            var currentServer = _db.Servers.Where(g => g.GuildId == serverIdString).SingleOrDefault();
+
+                            var userId = e.User.Id.ToString();
+
+
+                            // select user
+                            // select most recent user match from db since same user might leave and come back
+                            var user =
+                                _db.Users
+                                    .Where(u => (u.GuildId == serverIdString) && (u.UserId == userId))
+                                    .OrderByDescending(x => x.DateJoined)
+                                    .FirstOrDefault();
+
+                            if (user != null)
+                            {
+                                // update last active
+                                user.LastActive = DateTime.UtcNow;
+
+                                // save changes to db
+                                _db.SaveChanges();
+                            }
                         }
                     }
+
+
 
                     // is this correct usage?  i want an async method that awaits nothing
                     await Task.FromResult(true);

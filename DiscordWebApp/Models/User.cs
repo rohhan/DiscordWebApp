@@ -40,6 +40,9 @@ namespace DiscordWebApp.Models
         [Display(Name="Number of Flowers")]
         public int? NumberOfFlowers { get; set; }
 
+        public int RandomId { get; set; }
+        public DateTime? RandomIdUpdateTime { get; set; }
+
         public int ServerId { get; set; }
         public string GuildId { get; set; }
     }
