@@ -497,6 +497,10 @@ namespace DiscordWebAppBot
 
                                 await e.Channel.SendMessage(channelMessage);
                             }
+                            else
+                            {
+                                await e.Channel.SendMessage("Server does not exist in DB yet.  Please add server");
+                            }
                         }
                     }
                     else
@@ -1236,16 +1240,20 @@ namespace DiscordWebAppBot
             {
                 var logChannel = e.Server.FindChannels(logChannelName).FirstOrDefault();
 
-                if (e.Message != null && e.User != null)
+                if (logChannel != null)
                 {
-                    var message = e.Message.Text;
-                    var messageUser = e.Message.User;
-                    //var deletingUser = e.User.Name; not returning the person i want
+                    if (e.Message != null && e.User != null)
+                    {
+                        var message = e.Message.Text;
+                        var messageUser = e.Message.User;
+                        //var deletingUser = e.User.Name; not returning the person i want
 
-                    await logChannel.SendMessage($"```Markdown\n# \" Message deleted \"\n{e.Message.User} - \"{e.Message.Text}\"\n```");
+                        await logChannel.SendMessage($"```Markdown\n# \" Message deleted \"\n{e.Message.User} - \"{e.Message.Text}\"\n```");
+                    }
+                    else
+                        await logChannel.SendMessage($"```Markdown\n# \" Message deleted \"\nCould not retrieve deleted info (message not in cache)\n```");
                 }
-                else
-                    await logChannel.SendMessage($"```Markdown\n# \" Message deleted \"\nCould not retrieve deleted info (message not in cache)\n```");
+                
             };
 
             // track when users joined
