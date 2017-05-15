@@ -610,7 +610,11 @@ namespace DiscordWebAppBot
                         " **Secret Channels:**\n" +
                         "• There are a few special channels that you will need to manually unlock access to: \n" +
                         "        => Type **.iam nsfw** to unlock the nsfw channel.  \n" +
-                        "        => Type **.iam book club** to unlock the book club.\n" +
+                        "        => Type **.iam selfies** to unlock the selfie channel.\n" +
+                        "        => Type **.iam anime** to unlock the anime channel.\n" +
+                        "        => Type **.iam d&d** to unlock the d&d channel.\n" +
+                        "        => Type **.iam trivia** to unlock the trivia channel.\n" +
+                        "        => Type **.iam hangman** to unlock the hangman channel.\n" +
                         "        => We have a private channel for venting/ranting/advice.  If you would like access to the **diary** channel, please contact a moderator or admin.\n\n" +
 
                         " **Experience, levels, and currency:**\n" +
@@ -624,7 +628,15 @@ namespace DiscordWebAppBot
             commands.CreateCommand("help events")
                 .Do(async (e) =>
                 {
-                    await e.Channel.SendMessage("__**Event Information:**__  \n\n*tl;dr: There are weekly server events to watch movies, party, and play games together*  \n\n1) **Movie Nights** - A different movie every Friday night, voted on by the members.  \n2) **Drunk On Cam Nights** - Every Saturday on Rabbit.  \n3) **TableTop Simulator** - Come play virtual board games with your virtual friends every Sunday.");
+                    var msg = "";
+
+                    msg = "__**Event Information:**__  \n\n";
+                    msg += "*tl;dr: There are weekly server events to watch movies, party, and play games together*  \n\n";
+                    msg += "**Movie Nights** - A different movie every Friday night, voted on by the members.  \n";
+                    //msg += "2) **Drunk On Cam Nights** - Every Saturday on Rabbit.  \n";
+                    msg += "**Family Game Night** - Come play virtual board games with your virtual friends every Sunday.";
+
+                    await e.Channel.SendMessage(msg);
                 });
 
             commands.CreateCommand("help games")
@@ -882,7 +894,7 @@ namespace DiscordWebAppBot
                     {
                         if (e.Server != null)
                         {
-                            if (e.Channel.Name == "dear_diary" || e.Channel.Name == "gen_chat_shitposting" || e.Channel.Name == "batcave")
+                            if (e.Channel.Name == "dear_diary" || e.Channel.Name == "shitposting" || e.Channel.Name == "batcave")
                             {
                                 // get server and user info
                                 var serverIdString = e.Server.Id.ToString();
@@ -1088,9 +1100,11 @@ namespace DiscordWebAppBot
                 {
                     if (e.Server == null)
                     {
+                        // 285947936792379395 = memes channel id
+
                         // get server and channel
                         var server = discord.FindServers("Internet Addicts").FirstOrDefault();
-                        var logChannel = server.FindChannels("gen_chat_shitposting").FirstOrDefault();
+                        var logChannel = server.FindChannels("shitposting").FirstOrDefault();
 
                         using (var _db = new DiscordWebAppDb())
                         {
@@ -1248,7 +1262,15 @@ namespace DiscordWebAppBot
                         var messageUser = e.Message.User;
                         //var deletingUser = e.User.Name; not returning the person i want
 
-                        await logChannel.SendMessage($"```Markdown\n# \" Message deleted \"\n{e.Message.User} - \"{e.Message.Text}\"\n```");
+                        try
+                        {
+                            // error when deleting intro message of greater than 20000 characters
+                            await logChannel.SendMessage($"```Markdown\n# \" Message deleted \"\n{e.Message.User} - \"{e.Message.Text}\"\n```");
+                        }
+                        catch {
+
+                        }
+                        
                     }
                     else
                         await logChannel.SendMessage($"```Markdown\n# \" Message deleted \"\nCould not retrieve deleted info (message not in cache)\n```");
@@ -1284,7 +1306,26 @@ namespace DiscordWebAppBot
                 // output note to mod channel
                 var logChannel = e.Server.FindChannels(logJoinedAndLeftChannel).FirstOrDefault();
                 // Perl is just for colored markdown
-                await logChannel.SendMessage($"```Perl\n\" User has joined the server - {e.User.JoinedAt} (UTC) \"\n{e.User}\n```");
+                if (e.User != null)
+                {
+                    string welcomeMessage = "Welcome to the server!  If you have any questions or are new to discord, type **!help new user** or message an admin :)\n\n" +
+                                            "We suggest you customize your experience and unlock some hidden channels.  You start with the basic channels, but there are extra channels that you can unlock with the commands below: \n\n" +
+                                            "    => Type **.iam nsfw** to unlock the nsfw channel.  \n" +
+                                            "    => Type **.iam selfies** to unlock the selfie channel.\n" +
+                                            "    => Type **.iam anime** to unlock the anime channel.\n" +
+                                            "    => Type **.iam d&d** to unlock the d&d channel.\n" +
+                                            "    => Type **.iam trivia** to unlock the trivia channel.\n" +
+                                            "    => Type **.iam hangman** to unlock the hangman channel.\n" +
+                                            "    => We have a private channel for venting/ranting/advice.  If you would like access to the **diary** channel, please contact a moderator or admin.\n\n" +
+                                            "__**NOTE:  Type these commands in the #bot_commands channel**__";
+                    await e.User.SendMessage(welcomeMessage);
+                }
+
+                if (logChannel != null)
+                {
+                    await logChannel.SendMessage($"```Perl\n\" User has joined the server - {e.User.JoinedAt} (UTC) \"\n{e.User}\n```");
+                }
+                
             };
 
             // track when users leave
@@ -1343,8 +1384,12 @@ namespace DiscordWebAppBot
                     var user = _db.Users.Where(u => (u.GuildId == serverIdString) && (u.UserId == userId)).OrderByDescending(x => x.DateJoined).FirstOrDefault();
 
                     // update user leave info
-                    user.LeaveType = "BANNED";
-                    user.DateLeft = e.User.LastOnlineAt;
+                    if (user != null)
+                    {
+                        user.LeaveType = "BANNED";
+                        user.DateLeft = e.User.LastOnlineAt;
+                    }
+                    
 
                     // save to db
                     _db.SaveChanges();
@@ -1352,7 +1397,11 @@ namespace DiscordWebAppBot
 
                 // output note to mod channel
                 var logChannel = e.Server.FindChannels(logJoinedAndLeftChannel).FirstOrDefault();
-                await logChannel.SendMessage($"```Diff\n+ \" User has been BANNED from the server - {e.User.LastOnlineAt} (UTC) \"\n{e.User}\n```");
+                if (logChannel != null)
+                {
+                    await logChannel.SendMessage($"```Diff\n+ \" User has been BANNED from the server - {e.User.LastOnlineAt} (UTC) \"\n{e.User}\n```");
+                }
+                
             };
 
             // track user last active
