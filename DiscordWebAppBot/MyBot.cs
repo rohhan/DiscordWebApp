@@ -6,6 +6,7 @@ using System;
 using System.Collections.Generic;
 using System.Data.Entity.Migrations;
 using System.Linq;
+using System.Data.Entity;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -45,7 +46,7 @@ namespace DiscordWebAppBot
                 .Parameter("GreetedPerson", ParameterType.Optional)
                 .Do(async (e) =>
                 {
-                    
+
                     await e.Channel.SendMessage($"this is a test for {e.User.Name}");
                 });
 
@@ -146,6 +147,7 @@ namespace DiscordWebAppBot
 
                                     if (existingUser != null)
                                     {
+                                        existingUser.Username = item.Name;
                                         Console.WriteLine($"User already exists: {item.Name}");
                                     }
                                     else
@@ -320,7 +322,7 @@ namespace DiscordWebAppBot
                                         };
                                         Console.WriteLine($"Created new user - {user}");
                                     }
-                                    
+
                                 }
                                 catch
                                 {
@@ -598,28 +600,29 @@ namespace DiscordWebAppBot
                 {
                     string message =
                         "__**New User Guide:**__ \n\n" +
-                        "*Welcome to the Internet Addicts Server.  Please read the #info_and_announcements channel to get yourself up to date with the rules, events, and other server happenings.* \n\n" +
-                        " __**Basic Info:**__\n\n" +
-                        " **Text and Voice Channels:**\n" +
-                        "• There are different text channels for different purposes (main chat, memes, music, fitness, etc.)  Please use the appropriate channels :)\n" +
-                        "• Same thing goes for voice channels on the left.  *Protip: If you want a quieter chatting experience, check out one of the smaller size-limited voice channels!*\n\n" +
+                        "*__**Welcome to the Internet Addicts Server.**__\n\n"  +
+                        "Please read the #welcome center channel to get yourself up to date with the rules, events, and other server happenings.*\n\n" +
+                        // channels:
+                        "For new users, we suggest that you customize your experience by unlocking channels (hidden by default) that you are interested in:\n"+
+                        "        => Type **.iam selfies** to unlock the selfie channel.\n" +
+                        "        => Type **.iam tv** to unlock the tv and movies channel.\n" +
+                        "        => Type **.iam d&d** to unlock the d&d channel.\n" +
+                        "        => Type **.iam book club** to unlock the literature channel.\n" +
+                        "        => Type **.iam politics** to unlock the politics and debate channel.\n" +
+                        "        => Type **.iam nsfw** to unlock the nsfw channel.  \n" +
+                        "        => Type **.iam bot games** to unlock the trivia and hangman channels.\n" +
+                        "        => We have a private channel for venting/ranting/advice.  If you would like access to the **diary** channel, please contact a moderator or admin.\n\n" +
+                        "*Note: Type this in the #bot_commands channel, not here*\n\n" +
+                        // games:
                         " **Video Games:**\n" +
                         "• If you play video games, be sure to set up your game roles so that you can easily find people to game with.  For more details, type **!help games**\n\n" +
+                        // events:
                         " **Events:**\n" +
-                        "• We host weekly server events.  For more information, type **!help events** .  There are also in house gaming tournaments so keep an eye out for the next one!\n\n" +
-                        " **Secret Channels:**\n" +
-                        "• There are a few special channels that you will need to manually unlock access to: \n" +
-                        "        => Type **.iam nsfw** to unlock the nsfw channel.  \n" +
-                        "        => Type **.iam selfies** to unlock the selfie channel.\n" +
-                        "        => Type **.iam anime** to unlock the anime channel.\n" +
-                        "        => Type **.iam d&d** to unlock the d&d channel.\n" +
-                        "        => Type **.iam trivia** to unlock the trivia channel.\n" +
-                        "        => Type **.iam hangman** to unlock the hangman channel.\n" +
-                        "        => We have a private channel for venting/ranting/advice.  If you would like access to the **diary** channel, please contact a moderator or admin.\n\n" +
-
+                        "• Movie nights every Friday!\n\n" +
+                        // currency:
                         " **Experience, levels, and currency:**\n" +
-                        "• You can earn *server experience*  while typing in chat.  Experience will level you up and you will unlock special roles at certain levels.  For example, level 3 unlocks the ability to embed images. \n" +
-                        "• You can earn *server currency* while typing in chat.  You can use this currency to gamble, buy other people, top the leaderboards, and win rewards at the end of the season.  For more information, type **!help currency** or **!help gambling**\n\n" +
+                        "• You can earn *server experience*  while typing in chat.  Experience will level you up and you will unlock special roles at certain levels.  For example, level 3 unlocks the ability to embed images. \n\n" +
+
                         "If you have any other questions, feel free to contact a mod or admin.";
 
                     await e.Channel.SendMessage(message);
@@ -642,7 +645,7 @@ namespace DiscordWebAppBot
             commands.CreateCommand("help games")
                 .Do(async (e) =>
                 {
-                    await e.Channel.SendMessage($"__**Game Role Commands:**__\n\n*tl;dr: Use the commands below to search through the list of games, add/remove games to yourself, and then find other users to play games with.*\n\n**.lsar** - See the list of all game roles available on the server.\n**.iam [game name]** - Add a game role to yourself.  Example: .iam Overwatch  \n**.iamnot [game name]** - Remove a game role from yourself.  \n**@[game name]** - You can ping game roles to notify players when you are looking for a group.  Example: 'Does anybody want to play @Overwatch ?'  \n\n*See a game missing from the list?  If you want a new game added to the .lsar list, contact a moderator or admin!*");
+                    await e.Channel.SendMessage($"__**Game Role Commands:**__\n\n*tl;dr: Use the commands below to search through the list of games, add/remove games to yourself, and then find other users to play games with.*\n\n**!games** - See the list of all game roles available on the server.\n**.iam [game name]** - Add a game role to yourself.  Example: .iam Overwatch  \n**.iamnot [game name]** - Remove a game role from yourself.  \n**@[game name]** - You can ping game roles to notify players when you are looking for a group.  Example: 'Does anybody want to play @Overwatch ?'  \n\n*See a game missing from the list?  If you want a new game added to the list, contact a moderator or admin!*");
                 });
 
             commands.CreateCommand("help currency")
@@ -883,7 +886,7 @@ namespace DiscordWebAppBot
                             await e.Channel.SendMessage(message);
                         }
                     }
-                    
+
                 });
 
             commands.CreateCommand("anon")
@@ -982,7 +985,7 @@ namespace DiscordWebAppBot
                                     await e.Channel.SendMessage($"**Anon {randomId}**: {message}");
 
                                 }
-                            }   
+                            }
                         }
                     }
                 });
@@ -1243,11 +1246,208 @@ namespace DiscordWebAppBot
                         {
                             await e.Message.Delete();
                         }
-                        
+
 
                     }
 
-                    
+
+                });
+
+            // d&d stuff
+            commands.CreateCommand("AddCampaign")
+                .Parameter("userid", ParameterType.Required)
+                .Do(async (e) =>
+                {
+                    var userIdStr = e.GetArg("userid");
+
+                    using (var _db = new DiscordWebAppDb())
+                    {
+                        var dm = _db.Users.Where(u => u.UserId == userIdStr).FirstOrDefault();
+                        var campaign = new Campaign()
+                        {
+                            DungeonmMasterId = dm.UserId,
+                            DungeonMasterName = dm.Username
+                        };
+
+                        _db.Campaigns.Add(campaign);
+                        _db.SaveChanges();
+
+                        await e.Channel.SendMessage($"Successfully added campaign!");
+                    }
+                });
+
+            commands.CreateCommand("UpdateCampaignTime")
+                .Parameter("time", ParameterType.Required)
+                .Do(async (e) =>
+                {
+                    var campaignTime = e.GetArg("time");
+                    var dmId = e.User.Id.ToString();
+
+                    using (var _db = new DiscordWebAppDb())
+                    {
+                        var campaign = _db.Campaigns.Where(c => c.DungeonmMasterId == dmId).FirstOrDefault();
+                        if (campaign == null)
+                        {
+                            await e.Channel.SendMessage("Error: You do not own any campaigns.");
+                        }
+                        else
+                        {
+                            campaign.Time = campaignTime;
+                            _db.SaveChanges();
+                            await e.Channel.SendMessage("Successfully udpated campaign time");
+                        }
+                    }
+                });
+
+            commands.CreateCommand("AddPlayer")
+                .Parameter("playerIdStr", ParameterType.Required)
+                .Parameter("playerClass", ParameterType.Required)
+                .Do(async (e) =>
+                {
+                    string userIdStr = e.GetArg("playerIdStr");
+                    string playerClass = e.GetArg("playerClass");
+
+                    var dmId = e.User.Id.ToString();
+
+                    using (var _db = new DiscordWebAppDb())
+                    {
+                        var campaign = _db.Campaigns.Include(x => x.Players).Where(c => c.DungeonmMasterId == dmId).FirstOrDefault();
+                        var player = _db.Users.Where(c => c.UserId == userIdStr).FirstOrDefault();
+                        var playerName = player.Username;
+
+                        var newPlayer = new CampaignPlayer()
+                        {
+                            UserDiscordIdStr = userIdStr,
+                            PlayerName = playerName,
+                            PlayerClass = playerClass,
+                            DungeonMasterIdStr = dmId
+                        };
+
+                        campaign.Players.Add(newPlayer);
+                        _db.CampaignPlayers.Add(newPlayer);
+                        _db.SaveChanges();
+
+                        await e.Channel.SendMessage("Successfully added player!");
+
+                    }
+                });
+
+            commands.CreateCommand("RemovePlayer")
+                .Parameter("playerIdStr", ParameterType.Required)
+                .Do(async (e) =>
+                {
+                    string playerIdStr = e.GetArg("playerIdStr");
+                    var dmId = e.User.Id.ToString();
+
+                    using (var _db = new DiscordWebAppDb())
+                    {
+                        var campaignPlayer = _db.CampaignPlayers.Where(cp => cp.UserDiscordIdStr == playerIdStr).FirstOrDefault();
+                        if (campaignPlayer != null)
+                        {
+                            _db.CampaignPlayers.Remove(campaignPlayer);
+                            _db.SaveChanges();
+                            await e.Channel.SendMessage("Player successfully removed!");
+                        }
+                        else
+                        {
+                            await e.Channel.SendMessage("Error: Player does not exist in campaign!");
+                        }
+                        
+                    }
+                });
+
+            commands.CreateCommand("CampaignInfo")
+                .Do(async (e) =>
+                {
+                    var dmIdStr = e.User.Id.ToString();
+
+                    using (var _db = new DiscordWebAppDb())
+                    {
+                        var campaign = _db.Campaigns.Where(c => c.DungeonmMasterId == dmIdStr).FirstOrDefault();
+                        var players = _db.CampaignPlayers.Where(cp => cp.DungeonMasterIdStr == dmIdStr);
+
+                        if (campaign == null)
+                        {
+                            await e.Channel.SendMessage("You do not own any campaigns!");
+                        }
+                        else
+                        {
+                            string dmName = campaign.DungeonMasterName;
+                            string campaignTime = campaign.Time;
+
+                            StringBuilder builder = new StringBuilder();
+                            builder.Append($"__**Dungeon Master: {dmName}**__\n");
+                            builder.Append($"**Date & Time:** {campaignTime}\n");
+                            builder.Append($"**Players:**\n");
+
+                            if (players != null && players.Count() > 0)
+                            {
+                                foreach (CampaignPlayer cp in players)
+                                {
+                                    builder.Append($"    ► {cp.PlayerName} - {cp.PlayerClass}\n");
+                                }
+                            }
+                            else
+                            {
+                                builder.Append($"    ► There are no players.");
+                            }
+
+                            await e.Channel.SendMessage($"{builder.ToString()}");
+                        }
+                    }
+                });
+
+            commands.CreateCommand("DnDInfo")
+                .Do(async (e) =>
+                {
+                    using (var _db = new DiscordWebAppDb())
+                    {
+                        var campaigns = _db.Campaigns.Include(x => x.Players);
+                        var campaignCount = campaigns.Count();
+
+                        StringBuilder builder = new StringBuilder();
+
+                        if (campaigns != null)
+                        {
+                            builder.Append($"There are currently **{campaignCount}** live groups: \n\n");
+
+                            foreach (var campaign in campaigns)
+                            {
+                                var dmIdstr = campaign.DungeonmMasterId;
+
+                                builder.Append($"__**Dungeon Master: {campaign.DungeonMasterName}**__\n");
+                                builder.Append($"**Date & Time**: {campaign.Time}\n");
+                                builder.Append($"**Players**:\n");
+
+                                try
+                                {
+                                    if (campaign.Players.Count() > 0)
+                                    {
+                                        foreach (CampaignPlayer cp in campaign.Players)
+                                        {
+                                            builder.Append($"    ► {cp.PlayerName} - {cp.PlayerClass}\n");
+                                        }
+                                    }
+                                    else
+                                    {
+                                        builder.Append($"    ► There are no players.");
+                                    }
+                                }
+                                catch(Exception exception){
+                                    await e.Channel.SendMessage(exception.ToString());
+                                }
+
+                                builder.Append("\n\n");
+                            }
+
+                            await e.Channel.SendMessage($"{builder.ToString()}");
+                        }
+                        else
+                        {
+                            await e.Channel.SendMessage("There are currently no campaigns!");
+                        }
+                        
+                    }
                 });
 
             discord.MessageDeleted += async (s, e) =>
@@ -1306,18 +1506,20 @@ namespace DiscordWebAppBot
                 // output note to mod channel
                 var logChannel = e.Server.FindChannels(logJoinedAndLeftChannel).FirstOrDefault();
                 // Perl is just for colored markdown
-                if (e.User != null)
+                if (e.User != null && e.Server.Id == 270646322774802433)
                 {
                     string welcomeMessage = "Welcome to the server!  If you have any questions or are new to discord, type **!help new user** or message an admin :)\n\n" +
                                             "We suggest you customize your experience and unlock some hidden channels.  You start with the basic channels, but there are extra channels that you can unlock with the commands below: \n\n" +
-                                            "    => Type **.iam nsfw** to unlock the nsfw channel.  \n" +
                                             "    => Type **.iam selfies** to unlock the selfie channel.\n" +
-                                            "    => Type **.iam anime** to unlock the anime channel.\n" +
+                                            "    => Type **.iam book club** to unlock the literature channel.\n" +
                                             "    => Type **.iam d&d** to unlock the d&d channel.\n" +
-                                            "    => Type **.iam trivia** to unlock the trivia channel.\n" +
-                                            "    => Type **.iam hangman** to unlock the hangman channel.\n" +
-                                            "    => We have a private channel for venting/ranting/advice.  If you would like access to the **diary** channel, please contact a moderator or admin.\n\n" +
-                                            "__**NOTE:  Type these commands in the #bot_commands channel**__";
+                                            "    => Type **.iam tv** to unlock the television and movies channel.\n" +
+                                            "    => Type **.iam politics** to unlock the politics and debate channel.\n" +
+                                            "    => Type **.iam nsfw** to unlock the nsfw channel.  \n" +
+                                            "    => Type **.iam bot games** to unlock the trivia and hangman channel.\n" +
+                                            "    => We have a private channel for venting/ranting/advice.  If you would like access to the **diary** channel, please contact a moderator or admin.\n" +
+                                            "**NOTE:  Type these commands in the #bot_commands channel**__\n\n" +
+                                            " ";
                     await e.User.SendMessage(welcomeMessage);
                 }
 

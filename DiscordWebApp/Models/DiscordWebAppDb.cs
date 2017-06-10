@@ -17,5 +17,8 @@ namespace DiscordWebApp.Models
 
         public DbSet<MovieNight> MovieNights { get; set; }
         public DbSet<Movie> Movies { get; set; }
+
+        public DbSet<Campaign> Campaigns { get; set; }
+        public DbSet<CampaignPlayer> CampaignPlayers  { get; set; }
     }
 }
