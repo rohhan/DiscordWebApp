@@ -11,6 +11,7 @@ namespace DiscordWebApp.Models
         public string DungeonmMasterId { get; set; }
         public string DungeonMasterName { get; set; }
         public string Time { get; set; }
+        public string Descriptor { get; set; }
         public ICollection<CampaignPlayer> Players { get; set; }
     }
 }

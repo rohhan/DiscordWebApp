@@ -1256,9 +1256,11 @@ namespace DiscordWebAppBot
             // d&d stuff
             commands.CreateCommand("AddCampaign")
                 .Parameter("userid", ParameterType.Required)
+                .Parameter("descriptor", ParameterType.Required)
                 .Do(async (e) =>
                 {
                     var userIdStr = e.GetArg("userid");
+                    var descriptor = e.GetArg("descriptor");
 
                     using (var _db = new DiscordWebAppDb())
                     {
@@ -1266,7 +1268,8 @@ namespace DiscordWebAppBot
                         var campaign = new Campaign()
                         {
                             DungeonmMasterId = dm.UserId,
-                            DungeonMasterName = dm.Username
+                            DungeonMasterName = dm.Username,
+                            Descriptor = descriptor
                         };
 
                         _db.Campaigns.Add(campaign);
@@ -1276,16 +1279,44 @@ namespace DiscordWebAppBot
                     }
                 });
 
+            commands.CreateCommand("RemoveCampaign")
+                .Parameter("dmId", ParameterType.Required)
+                .Parameter("descriptor", ParameterType.Required)
+                .Do(async (e) =>
+                {
+                    var dmId = e.GetArg("dmId");
+                    var descriptor = e.GetArg("descriptor");
+
+                    using (var _db = new DiscordWebAppDb())
+                    {
+                        var campaign = _db.Campaigns.Where(c => (c.DungeonmMasterId == dmId) && (c.Descriptor == descriptor)).FirstOrDefault();
+
+                        if (campaign != null)
+                        {
+                            _db.Campaigns.Remove(campaign);
+                            _db.SaveChanges();
+                            await e.Channel.SendMessage("Campaign successfully removed!");
+                        }
+                        else
+                        {
+                            await e.Channel.SendMessage("Error: Campaign does not exist in campaign!");
+                        }
+                    }
+                });
+
+
             commands.CreateCommand("UpdateCampaignTime")
+                .Parameter("descriptor", ParameterType.Required)
                 .Parameter("time", ParameterType.Required)
                 .Do(async (e) =>
                 {
                     var campaignTime = e.GetArg("time");
                     var dmId = e.User.Id.ToString();
+                    var descriptor = e.GetArg("descriptor");
 
                     using (var _db = new DiscordWebAppDb())
                     {
-                        var campaign = _db.Campaigns.Where(c => c.DungeonmMasterId == dmId).FirstOrDefault();
+                        var campaign = _db.Campaigns.Where(c => (c.DungeonmMasterId == dmId) && (c.Descriptor == descriptor)).FirstOrDefault();
                         if (campaign == null)
                         {
                             await e.Channel.SendMessage("Error: You do not own any campaigns.");
@@ -1300,18 +1331,20 @@ namespace DiscordWebAppBot
                 });
 
             commands.CreateCommand("AddPlayer")
+                .Parameter("descriptor", ParameterType.Required)
                 .Parameter("playerIdStr", ParameterType.Required)
                 .Parameter("playerClass", ParameterType.Required)
                 .Do(async (e) =>
                 {
                     string userIdStr = e.GetArg("playerIdStr");
                     string playerClass = e.GetArg("playerClass");
+                    var descriptor = e.GetArg("descriptor");
 
                     var dmId = e.User.Id.ToString();
 
                     using (var _db = new DiscordWebAppDb())
                     {
-                        var campaign = _db.Campaigns.Include(x => x.Players).Where(c => c.DungeonmMasterId == dmId).FirstOrDefault();
+                        var campaign = _db.Campaigns.Include(x => x.Players).Where(c => (c.DungeonmMasterId == dmId) && (c.Descriptor == descriptor)).FirstOrDefault();
                         var player = _db.Users.Where(c => c.UserId == userIdStr).FirstOrDefault();
                         var playerName = player.Username;
 
@@ -1320,7 +1353,8 @@ namespace DiscordWebAppBot
                             UserDiscordIdStr = userIdStr,
                             PlayerName = playerName,
                             PlayerClass = playerClass,
-                            DungeonMasterIdStr = dmId
+                            DungeonMasterIdStr = dmId,
+                            CampaignDescriptor = descriptor
                         };
 
                         campaign.Players.Add(newPlayer);
@@ -1333,15 +1367,17 @@ namespace DiscordWebAppBot
                 });
 
             commands.CreateCommand("RemovePlayer")
+                .Parameter("descriptor", ParameterType.Required)
                 .Parameter("playerIdStr", ParameterType.Required)
                 .Do(async (e) =>
                 {
                     string playerIdStr = e.GetArg("playerIdStr");
                     var dmId = e.User.Id.ToString();
+                    var descriptor = e.GetArg("descriptor");
 
                     using (var _db = new DiscordWebAppDb())
                     {
-                        var campaignPlayer = _db.CampaignPlayers.Where(cp => cp.UserDiscordIdStr == playerIdStr).FirstOrDefault();
+                        var campaignPlayer = _db.CampaignPlayers.Where(cp => (cp.UserDiscordIdStr == playerIdStr) && (cp.DungeonMasterIdStr == dmId) && (cp.CampaignDescriptor == descriptor)).FirstOrDefault();
                         if (campaignPlayer != null)
                         {
                             _db.CampaignPlayers.Remove(campaignPlayer);
@@ -1363,36 +1399,39 @@ namespace DiscordWebAppBot
 
                     using (var _db = new DiscordWebAppDb())
                     {
-                        var campaign = _db.Campaigns.Where(c => c.DungeonmMasterId == dmIdStr).FirstOrDefault();
+                        var campaigns = _db.Campaigns.Where(c => c.DungeonmMasterId == dmIdStr).ToList();
                         var players = _db.CampaignPlayers.Where(cp => cp.DungeonMasterIdStr == dmIdStr);
 
-                        if (campaign == null)
+                        if (campaigns == null)
                         {
                             await e.Channel.SendMessage("You do not own any campaigns!");
                         }
                         else
                         {
-                            string dmName = campaign.DungeonMasterName;
-                            string campaignTime = campaign.Time;
-
-                            StringBuilder builder = new StringBuilder();
-                            builder.Append($"__**Dungeon Master: {dmName}**__\n");
-                            builder.Append($"**Date & Time:** {campaignTime}\n");
-                            builder.Append($"**Players:**\n");
-
-                            if (players != null && players.Count() > 0)
+                            foreach (Campaign campaign in campaigns)
                             {
-                                foreach (CampaignPlayer cp in players)
+                                string dmName = campaign.DungeonMasterName;
+                                string campaignTime = campaign.Time;
+
+                                StringBuilder builder = new StringBuilder();
+                                builder.Append($"__**Dungeon Master: {dmName}**__\n");
+                                builder.Append($"**Date & Time:** {campaignTime}\n");
+                                builder.Append($"**Players:**\n");
+
+                                if (players != null && players.Count() > 0)
                                 {
-                                    builder.Append($"    ► {cp.PlayerName} - {cp.PlayerClass}\n");
+                                    foreach (CampaignPlayer cp in players)
+                                    {
+                                        builder.Append($"    ► {cp.PlayerName} - {cp.PlayerClass}\n");
+                                    }
                                 }
-                            }
-                            else
-                            {
-                                builder.Append($"    ► There are no players.");
-                            }
+                                else
+                                {
+                                    builder.Append($"    ► There are no players.");
+                                }
 
-                            await e.Channel.SendMessage($"{builder.ToString()}");
+                                await e.Channel.SendMessage($"{builder.ToString()}");
+                            }
                         }
                     }
                 });
